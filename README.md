@@ -16,7 +16,8 @@ expresión oral en español e inglés"*. Metodología Scrum.
 | Funcionalidad | Qué hace |
 |---|---|
 | Bienvenida del profesor | Al abrir la app, el profesor escribe su nombre, materia y grupo (sin contraseña ni servidor). Aparece en la barra lateral, el saludo y el reporte PDF. "Change teacher" termina la sesión y deja todo limpio para el siguiente profesor. |
-| Dashboard visual | Tarjetas con iconos, dona de progreso de revisión, barras de similitud con la línea del umbral (clic para abrir la revisión) y transiciones suaves. |
+| Dashboard visual | Tarjetas con contadores animados, "Highlights" con hallazgos automáticos (par más parecido, IA elevada, problema de formato más común, pendientes), dona de progreso, barras de similitud con la línea del umbral y aviso de "Session complete" al terminar. |
+| Revisión ágil | Botones anterior/siguiente ("Submission 2 of 5"); al señalar un documento coincidente se resaltan sus pasajes en el visor y con un clic se salta a ellos. |
 | Carga de documentos | Arrastrar y soltar o seleccionar archivos `.docx`, `.pdf` y `.txt`. Nombre del alumno, título de la tarea y opción de marcar archivos de referencia. |
 | Detección de similitud | Compara cada entrega con las demás y con los archivos de referencia mediante fragmentos de 5 palabras. Nunca consulta internet. |
 | Validación de formato | En `.docx`: fuente, tamaño, interlineado, márgenes y alineación. En todos los formatos: conteo de palabras, título, sección de referencias y estilo de citas (APA 7 / MLA 9 / Chicago). |

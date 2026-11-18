@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { docLabel, nextPending, useStore } from '../state/store';
 import type { ReviewStatus } from '../types';
 import { AiBadge, EmptyState, Modal, OutcomeBadge, ReviewBadge, SimilarityBadge, kindLabel, percentText } from './common';
@@ -10,6 +10,8 @@ export function Review() {
   const { state, dispatch, submissions, analysis, docById, go, notify } = useStore();
   const [completing, setCompleting] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [focusSource, setFocusSource] = useState<string | null>(null);
+  const [jumpToken, setJumpToken] = useState(0);
 
   const doc =
     submissions.find((d) => d.id === state.selectedId) ?? nextPending(submissions) ?? submissions[0] ?? undefined;
@@ -21,6 +23,7 @@ export function Review() {
         start: r.start,
         end: r.end,
         title: `Matches: ${r.sources.map((s) => docLabel(docById(s))).join(', ')}`,
+        sources: r.sources,
       })) ?? [],
     [a, docById],
   );
@@ -28,6 +31,9 @@ export function Review() {
     () => a?.ai?.sentences.map((s) => ({ start: s.start, end: s.end, title: `AI indicator: ${s.reasons.join('; ')}` })) ?? [],
     [a],
   );
+
+  // Al cambiar de entrega se quita el énfasis de la anterior
+  useEffect(() => setFocusSource(null), [doc?.id]);
 
   if (!doc || !a) {
     return (
@@ -58,6 +64,10 @@ export function Review() {
     }
   };
 
+  const index = submissions.findIndex((d) => d.id === doc.id);
+  const prev = index > 0 ? submissions[index - 1] : undefined;
+  const nextDoc = index < submissions.length - 1 ? submissions[index + 1] : undefined;
+
   const failed = a.checks.filter((c) => c.outcome === 'failed').length;
   const toReview = a.checks.filter((c) => c.outcome === 'review').length;
 
@@ -66,8 +76,18 @@ export function Review() {
       <section className="review-header card">
         <div>
           <label className="field-label" htmlFor="submission-select">
-            Submission
+            Submission {index + 1} of {submissions.length}
           </label>
+          <div className="submission-nav">
+          <button
+            type="button"
+            className="icon-button nav-arrow"
+            aria-label="Previous submission"
+            disabled={!prev}
+            onClick={() => prev && go('review', prev.id)}
+          >
+            <Icon name="arrow" size={18} className="flip" />
+          </button>
           <select
             id="submission-select"
             className="input select"
@@ -80,6 +100,16 @@ export function Review() {
               </option>
             ))}
           </select>
+          <button
+            type="button"
+            className="icon-button nav-arrow"
+            aria-label="Next submission"
+            disabled={!nextDoc}
+            onClick={() => nextDoc && go('review', nextDoc.id)}
+          >
+            <Icon name="arrow" size={18} />
+          </button>
+          </div>
           <p className="small muted-text review-meta">
             {doc.fileName} · {kindLabel(doc.kind)} · {a.wordCount} words · <ReviewBadge status={doc.reviewStatus} />
           </p>
@@ -102,8 +132,20 @@ export function Review() {
           plag={plagHighlights}
           ai={aiHighlights}
           aiEnabled={!!a.ai}
+          emphasize={focusSource}
+          jumpToken={jumpToken}
         />
-        <ResultsPanel key={`r-${doc.id}`} doc={doc} analysis={a} />
+        <ResultsPanel
+          key={`r-${doc.id}`}
+          doc={doc}
+          analysis={a}
+          focusedSource={focusSource}
+          onFocusSource={setFocusSource}
+          onJumpToSource={(id) => {
+            setFocusSource(id);
+            setJumpToken((t) => t + 1);
+          }}
+        />
       </div>
 
       {completing && (

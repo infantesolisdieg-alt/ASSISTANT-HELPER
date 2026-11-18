@@ -2,7 +2,6 @@ import { useRef, useState } from 'react';
 import { ACCEPTED_EXTENSIONS, extractFile, fileKind } from '../extract';
 import { newId, useStore } from '../state/store';
 import type { DocItem } from '../types';
-import { kindLabel } from './common';
 import { Icon } from './icons';
 
 function baseName(fileName: string): string {
@@ -176,10 +175,28 @@ export function Upload() {
               {staged.map((d) => (
                 <tr key={d.id}>
                   <td>
-                    <div className="strong">{d.fileName}</div>
-                    <div className="small muted-text">
-                      {kindLabel(d.kind)} ·{' '}
-                      {d.state === 'reading' ? 'Reading…' : d.state === 'error' ? <span className="text-bad">{d.error}</span> : 'Ready'}
+                    <div className="file-cell">
+                      <span className={`file-badge file-${d.kind}`} aria-hidden="true">
+                        {d.kind.toUpperCase()}
+                      </span>
+                      <div>
+                        <div className="strong">{d.fileName}</div>
+                        <div className="small file-status">
+                          {d.state === 'reading' ? (
+                            <>
+                              <span className="spinner" aria-hidden="true" /> Reading…
+                            </>
+                          ) : d.state === 'error' ? (
+                            <span className="text-bad">
+                              <Icon name="alert" size={14} /> {d.error}
+                            </span>
+                          ) : (
+                            <span className="text-ok">
+                              <Icon name="check" size={14} /> Ready · {d.text.split(/\s+/).filter(Boolean).length} words
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </td>
                   <td>

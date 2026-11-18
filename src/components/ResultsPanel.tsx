@@ -5,7 +5,7 @@ import { HIGH_MATCH_PERCENT } from '../analysis/similarity';
 import type { CheckResult } from '../analysis/types';
 import { docLabel, newId, useStore } from '../state/store';
 import type { DocItem } from '../types';
-import { Gauge } from './charts';
+import { Gauge, MiniBar } from './charts';
 import { AiBadge, OutcomeBadge, SimilarityBadge, percentText } from './common';
 import { Icon } from './icons';
 import { AI_TONE, STATUS_TONE } from './tones';
@@ -42,7 +42,19 @@ function CheckRow({ check }: { check: CheckResult }) {
   );
 }
 
-export function ResultsPanel({ doc, analysis }: { doc: DocItem; analysis: DocAnalysis }) {
+export function ResultsPanel({
+  doc,
+  analysis,
+  focusedSource,
+  onFocusSource,
+  onJumpToSource,
+}: {
+  doc: DocItem;
+  analysis: DocAnalysis;
+  focusedSource?: string | null;
+  onFocusSource?: (id: string | null) => void;
+  onJumpToSource?: (id: string) => void;
+}) {
   const { state, dispatch, docById } = useStore();
   const [note, setNote] = useState('');
   const { similarity, checks, ai } = analysis;
@@ -81,14 +93,29 @@ export function ResultsPanel({ doc, analysis }: { doc: DocItem; analysis: DocAna
         {similarity.matches.length === 0 ? (
           <p className="small">No matching passages with other files in this session.</p>
         ) : (
-          <ul className="match-list">
-            {similarity.matches.map((m) => (
-              <li key={m.docId}>
-                <span>{docLabel(docById(m.docId))}</span>
-                <span className="num strong">{percentText(m.percent)}</span>
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="match-list">
+              {similarity.matches.map((m) => (
+                <li key={m.docId}>
+                  <button
+                    type="button"
+                    className={`match-item${focusedSource === m.docId ? ' active' : ''}`}
+                    aria-pressed={focusedSource === m.docId}
+                    onMouseEnter={() => onFocusSource?.(m.docId)}
+                    onMouseLeave={() => onFocusSource?.(null)}
+                    onFocus={() => onFocusSource?.(m.docId)}
+                    onBlur={() => onFocusSource?.(null)}
+                    onClick={() => onJumpToSource?.(m.docId)}
+                  >
+                    <span className="match-name">{docLabel(docById(m.docId))}</span>
+                    <MiniBar value={m.percent} tone={STATUS_TONE[analysis.status]} />
+                    <span className="num strong">{percentText(m.percent)}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <p className="small muted-text">Point at a document to outline its passages; click to jump to them.</p>
+          </>
         )}
         <p className="small muted-text">Compared only with files uploaded in this session, never with the internet.</p>
       </section>

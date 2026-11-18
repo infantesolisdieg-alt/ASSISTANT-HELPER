@@ -6,7 +6,9 @@ import { docLabel, newId, nextPending, useStore } from '../state/store';
 import { firstName, type DocItem } from '../types';
 import { Donut, ProgressSegments, SimilarityBars, type DonutSegment, type Tone } from './charts';
 import { AiBadge, EmptyState, ReviewBadge, SimilarityBadge, kindLabel, percentText } from './common';
+import { CountUp } from './CountUp';
 import { Icon, type IconName } from './icons';
+import { Insights } from './Insights';
 import { STATUS_LABEL, STATUS_TONE } from './tones';
 
 function greeting(): string {
@@ -23,7 +25,9 @@ function StatCard({ icon, value, label, tone }: { icon: IconName; value: number;
         <Icon name={icon} size={22} />
       </span>
       <span className="stat-body">
-        <span className="stat-value">{value}</span>
+        <span className="stat-value">
+          <CountUp value={value} />
+        </span>
         <span className="stat-label">{label}</span>
       </span>
     </div>
@@ -155,6 +159,27 @@ export function Dashboard() {
             <StatCard icon="check" value={reviewed} label="Reviewed" tone="ok" />
             <StatCard icon="alert" value={alerts} label="With alerts" tone={alerts ? 'bad' : 'neutral'} />
           </section>
+
+          {!next && (
+            <section className="card complete-card" aria-live="polite">
+              <svg className="complete-check" width="56" height="56" viewBox="0 0 56 56" aria-hidden="true">
+                <circle cx="28" cy="28" r="25" />
+                <polyline points="17 29 25 37 40 21" />
+              </svg>
+              <div>
+                <h2>Session complete</h2>
+                <p className="muted-text">
+                  You reviewed all {submissions.length} submissions: {approved} approved and {corrections} need corrections.
+                  Export the reports you need before clearing the temporary files.
+                </p>
+              </div>
+              <button type="button" className="button button-secondary" onClick={() => go('upload')}>
+                <Icon name="upload" size={16} /> Upload more
+              </button>
+            </section>
+          )}
+
+          <Insights />
 
           <section className="chart-grid">
             <div className="card chart-card">
