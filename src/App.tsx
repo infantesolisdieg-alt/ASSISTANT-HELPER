@@ -7,6 +7,7 @@ import { Sidebar } from './components/Sidebar';
 import { Toast } from './components/Toast';
 import { Topbar } from './components/Topbar';
 import { Upload } from './components/Upload';
+import { Welcome } from './components/Welcome';
 import { StoreProvider, useStore } from './state/store';
 
 function CurrentView() {
@@ -27,6 +28,32 @@ function CurrentView() {
   }
 }
 
+function Shell() {
+  const { state } = useStore();
+  if (!state.profile) {
+    return (
+      <div className="app app-welcome">
+        <Welcome />
+      </div>
+    );
+  }
+  return (
+    <div className="app">
+      <Sidebar />
+      <div className="main">
+        <Topbar />
+        <main className="content" id="main-content">
+          {/* La key reinicia la transición suave al cambiar de pantalla */}
+          <div className="view-transition" key={state.view}>
+            <CurrentView />
+          </div>
+        </main>
+      </div>
+      <Toast />
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <StoreProvider>
@@ -36,16 +63,7 @@ export default function App() {
           <p>Assistant Helper is available on desktop computers only.</p>
         </div>
       </div>
-      <div className="app">
-        <Sidebar />
-        <div className="main">
-          <Topbar />
-          <main className="content" id="main-content">
-            <CurrentView />
-          </main>
-        </div>
-        <Toast />
-      </div>
+      <Shell />
     </StoreProvider>
   );
 }

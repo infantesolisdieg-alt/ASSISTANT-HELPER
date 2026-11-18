@@ -5,7 +5,10 @@ import { HIGH_MATCH_PERCENT } from '../analysis/similarity';
 import type { CheckResult } from '../analysis/types';
 import { docLabel, newId, useStore } from '../state/store';
 import type { DocItem } from '../types';
+import { Gauge } from './charts';
 import { AiBadge, OutcomeBadge, SimilarityBadge, percentText } from './common';
+import { Icon } from './icons';
+import { AI_TONE, STATUS_TONE } from './tones';
 
 function thresholdText(threshold: number): string {
   if (threshold >= HIGH_MATCH_PERCENT) return `Clear: below ${threshold}% · High match: ${HIGH_MATCH_PERCENT}% or more`;
@@ -16,7 +19,12 @@ function CheckRow({ check }: { check: CheckResult }) {
   return (
     <li className="check">
       <div className="check-head">
-        <span className="check-name">{check.name}</span>
+        <span className="check-name">
+          <span className={`check-dot dot-${check.outcome}`} aria-hidden="true">
+            {check.outcome === 'passed' ? '✓' : check.outcome === 'failed' ? '✕' : check.outcome === 'review' ? '!' : '–'}
+          </span>
+          {check.name}
+        </span>
         <OutcomeBadge outcome={check.outcome} />
       </div>
       <p className="check-detail">{check.detail}</p>
@@ -56,11 +64,20 @@ export function ResultsPanel({ doc, analysis }: { doc: DocItem; analysis: DocAna
     <div className="results">
       <section className="card result-section" aria-labelledby="sim-title">
         <h3 id="sim-title">Similarity</h3>
-        <div className="big-metric">
-          <span className="big-number">{percentText(similarity.percent)}</span>
-          <SimilarityBadge status={analysis.status} />
+        <div className="metric-row">
+          <Gauge
+            value={similarity.percent}
+            tone={STATUS_TONE[analysis.status]}
+            label="Similarity"
+            marker={state.settings.similarityThreshold}
+            markerLabel={`Threshold ${state.settings.similarityThreshold}%`}
+          />
+          <div className="metric-text">
+            <SimilarityBadge status={analysis.status} />
+            <p className="small muted-text">{thresholdText(state.settings.similarityThreshold)}</p>
+            <p className="small muted-text">The tick on the ring marks your threshold.</p>
+          </div>
         </div>
-        <p className="small muted-text">{thresholdText(state.settings.similarityThreshold)}</p>
         {similarity.matches.length === 0 ? (
           <p className="small">No matching passages with other files in this session.</p>
         ) : (
@@ -78,6 +95,18 @@ export function ResultsPanel({ doc, analysis }: { doc: DocItem; analysis: DocAna
 
       <section className="card result-section" aria-labelledby="fmt-title">
         <h3 id="fmt-title">Format &amp; writing</h3>
+        {checks.length > 0 && (
+          <div className="check-summary" aria-label="Check summary">
+            {(['passed', 'review', 'failed', 'na'] as const).map((o) => {
+              const n = checks.filter((c) => c.outcome === o).length;
+              return n ? (
+                <span key={o} className="cell-flex">
+                  <OutcomeBadge outcome={o} /> <span className="num strong">{n}</span>
+                </span>
+              ) : null;
+            })}
+          </div>
+        )}
         {checks.length === 0 && <p className="small">All format and writing checks are turned off in Settings.</p>}
         {groups.map((g) => {
           const items = checks.filter((c) => c.group === g.key);
@@ -102,11 +131,14 @@ export function ResultsPanel({ doc, analysis }: { doc: DocItem; analysis: DocAna
           <p className="small">AI indicators are turned off in Settings.</p>
         ) : (
           <>
-            <div className="big-metric">
-              <span className="big-number">{ai.percent}%</span>
-              <AiBadge level={ai.level} />
+            <div className="metric-row">
+              <Gauge value={ai.percent} tone={AI_TONE[ai.level]} label="AI indicator score" />
+              <div className="metric-text">
+                <AiBadge level={ai.level} />
+                <p className="small muted-text">Low below 25% · Moderate 25–44% · Elevated 45% or more</p>
+                {!ai.reliable && <p className="small text-warn">This text is short, so the indicators are less reliable.</p>}
+              </div>
             </div>
-            {!ai.reliable && <p className="small text-warn">This text is short, so the indicators are less reliable.</p>}
             <ul className="signal-list">
               {ai.signals.map((s) => (
                 <li key={s.id}>
@@ -168,7 +200,7 @@ export function ResultsPanel({ doc, analysis }: { doc: DocItem; analysis: DocAna
         />
         <div className="button-row">
           <button type="button" className="button button-secondary" disabled={!note.trim()} onClick={addNote}>
-            Add note
+            <Icon name="pen" size={16} /> Add note
           </button>
         </div>
       </section>

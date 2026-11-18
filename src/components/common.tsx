@@ -3,6 +3,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import type { AiLevel, CheckOutcome, SimilarityStatus } from '../analysis/types';
 import { REVIEW_LABEL, type ReviewStatus } from '../types';
+import { Icon, type IconName } from './icons';
 
 const STATUS_LABEL: Record<SimilarityStatus, string> = { clear: 'Clear', review: 'Review', high: 'High match' };
 const STATUS_TONE: Record<SimilarityStatus, string> = { clear: 'ok', review: 'warn', high: 'bad' };
@@ -90,9 +91,22 @@ export function Modal({
   );
 }
 
-export function EmptyState({ title, children, actions }: { title: string; children?: ReactNode; actions?: ReactNode }) {
+export function EmptyState({
+  title,
+  children,
+  actions,
+  icon = 'inbox',
+}: {
+  title: string;
+  children?: ReactNode;
+  actions?: ReactNode;
+  icon?: IconName;
+}) {
   return (
     <div className="card empty-state">
+      <span className="empty-icon">
+        <Icon name={icon} size={30} />
+      </span>
       <h2>{title}</h2>
       {children && <div className="empty-text">{children}</div>}
       {actions && <div className="button-row center">{actions}</div>}

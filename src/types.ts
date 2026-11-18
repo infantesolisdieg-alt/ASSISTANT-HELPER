@@ -2,6 +2,31 @@ import type { DocxFormat, FileKind } from './extract/types';
 
 export type ReviewStatus = 'pending' | 'approved' | 'needs-corrections';
 
+/** Perfil del profesor de la sesión. Solo vive en memoria. */
+export interface TeacherProfile {
+  name: string;
+  role: string;
+  group: string;
+}
+
+export const DEMO_PROFILE: TeacherProfile = {
+  name: 'Nalleli Olvera Castelan',
+  role: 'Teacher · Bilingual Executive Secretary',
+  group: '',
+};
+
+export function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  const first = parts[0][0];
+  const second = parts.length > 1 ? parts[1][0] : '';
+  return (first + second).toUpperCase();
+}
+
+export function firstName(name: string): string {
+  return name.trim().split(/\s+/)[0] ?? '';
+}
+
 export interface Note {
   id: string;
   text: string;

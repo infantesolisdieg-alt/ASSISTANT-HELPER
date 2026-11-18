@@ -4,7 +4,7 @@ import { jsPDF } from 'jspdf';
 import { AI_DISCLAIMER } from '../analysis/ai';
 import type { DocAnalysis } from '../analysis';
 import type { Settings } from '../settings';
-import { REVIEW_LABEL, type DocItem } from '../types';
+import { REVIEW_LABEL, type DocItem, type TeacherProfile } from '../types';
 
 const RED = [139, 30, 45] as const;
 const DARK = [42, 26, 28] as const;
@@ -24,8 +24,14 @@ function clean(s: string): string {
     .replace(/[^\x00-\xFF]/g, '');
 }
 
-export function exportReport(doc: DocItem, a: DocAnalysis, settings: Settings, labelOf: (id: string) => string): void {
-  const pdf = buildReport(doc, a, settings, labelOf);
+export function exportReport(
+  doc: DocItem,
+  a: DocAnalysis,
+  settings: Settings,
+  labelOf: (id: string) => string,
+  reviewer?: TeacherProfile | null,
+): void {
+  const pdf = buildReport(doc, a, settings, labelOf, reviewer);
   const safe = `${doc.studentName}-${doc.assignmentTitle}`
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
@@ -35,7 +41,13 @@ export function exportReport(doc: DocItem, a: DocAnalysis, settings: Settings, l
   pdf.save(`report-${safe || 'submission'}.pdf`);
 }
 
-export function buildReport(doc: DocItem, a: DocAnalysis, settings: Settings, labelOf: (id: string) => string): jsPDF {
+export function buildReport(
+  doc: DocItem,
+  a: DocAnalysis,
+  settings: Settings,
+  labelOf: (id: string) => string,
+  reviewer?: TeacherProfile | null,
+): jsPDF {
   const pdf = new jsPDF({ unit: 'pt', format: 'letter' });
   const margin = 56;
   const width = pdf.internal.pageSize.getWidth() - margin * 2;
@@ -77,6 +89,10 @@ export function buildReport(doc: DocItem, a: DocAnalysis, settings: Settings, la
   text(`Student: ${doc.studentName}`, { size: 11 });
   text(`Assignment: ${doc.assignmentTitle}`, { size: 11 });
   text(`File: ${doc.fileName} (${a.wordCount} words)`, { size: 11 });
+  if (reviewer) {
+    const who = [reviewer.name, reviewer.role, reviewer.group].filter(Boolean).join(' - ');
+    text(`Reviewed by: ${who}`, { size: 11 });
+  }
   text(`Generated: ${new Date().toLocaleString('en-US')}`, { size: 10, color: GREY });
   text(`Review status: ${REVIEW_LABEL[doc.reviewStatus]}`, { size: 11, bold: true, gap: 4 });
   if (doc.finalComment) text(`Final comment: ${doc.finalComment}`, { size: 11 });

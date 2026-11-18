@@ -1,6 +1,8 @@
 import { AI_DISCLAIMER } from '../analysis/ai';
 import { useStore } from '../state/store';
+import { MiniBar } from './charts';
 import { AiBadge, EmptyState } from './common';
+import { AI_TONE } from './tones';
 
 export function AiIndicators() {
   const { state, submissions, analysis, go } = useStore();
@@ -75,8 +77,12 @@ export function AiIndicators() {
                 <tr key={d.id}>
                   <td className="strong">{d.studentName}</td>
                   <td>{d.assignmentTitle}</td>
-                  <td className="num">
-                    {ai.percent}%{!ai.reliable && <span className="muted-text small"> (short text)</span>}
+                  <td>
+                    <span className="cell-flex">
+                      <MiniBar value={ai.percent} tone={AI_TONE[ai.level]} />
+                      <span className="num">{ai.percent}%</span>
+                      {!ai.reliable && <span className="muted-text small">(short text)</span>}
+                    </span>
                   </td>
                   <td>
                     <AiBadge level={ai.level} />

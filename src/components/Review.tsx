@@ -3,6 +3,7 @@ import { docLabel, nextPending, useStore } from '../state/store';
 import type { ReviewStatus } from '../types';
 import { AiBadge, EmptyState, Modal, OutcomeBadge, ReviewBadge, SimilarityBadge, kindLabel, percentText } from './common';
 import { DocumentViewer, type Highlight } from './DocumentViewer';
+import { Icon } from './icons';
 import { ResultsPanel } from './ResultsPanel';
 
 export function Review() {
@@ -49,7 +50,7 @@ export function Review() {
     setExporting(true);
     try {
       const { exportReport: run } = await import('../report/pdfReport');
-      run(doc, a, state.settings, (id) => docLabel(docById(id)));
+      run(doc, a, state.settings, (id) => docLabel(docById(id)), state.profile);
     } catch {
       notify('The report could not be created. Please try again.');
     } finally {
@@ -85,10 +86,10 @@ export function Review() {
         </div>
         <div className="button-row">
           <button type="button" className="button button-secondary" onClick={exportReport} disabled={exporting}>
-            {exporting ? 'Preparing PDF…' : 'Export report'}
+            <Icon name="download" size={16} /> {exporting ? 'Preparing PDF…' : 'Export report'}
           </button>
           <button type="button" className="button button-primary" onClick={() => setCompleting(true)}>
-            Complete review
+            <Icon name="check" size={16} /> Complete review
           </button>
         </div>
       </section>

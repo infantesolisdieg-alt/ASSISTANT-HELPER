@@ -4,11 +4,13 @@
 import { createContext, useCallback, useContext, useMemo, useReducer, useRef, type ReactNode } from 'react';
 import { analyzeAll, type SessionAnalysis } from '../analysis';
 import { DEFAULT_SETTINGS, type Settings } from '../settings';
-import type { DocItem, Note, ReviewStatus } from '../types';
+import type { DocItem, Note, ReviewStatus, TeacherProfile } from '../types';
 
 export type View = 'dashboard' | 'upload' | 'review' | 'plagiarism' | 'ai' | 'settings';
 
 interface State {
+  /** Profesor de la sesión (sin contraseña ni servidor). null = mostrar la bienvenida. */
+  profile: TeacherProfile | null;
   docs: DocItem[];
   settings: Settings;
   view: View;
@@ -26,9 +28,12 @@ type Action =
   | { type: 'clearAll' }
   | { type: 'setSettings'; settings: Settings }
   | { type: 'navigate'; view: View; selectedId?: string | null }
-  | { type: 'toast'; message: string };
+  | { type: 'toast'; message: string }
+  | { type: 'signIn'; profile: TeacherProfile }
+  | { type: 'signOut' };
 
 const initialState: State = {
+  profile: null,
   docs: [],
   settings: DEFAULT_SETTINGS,
   view: 'dashboard',
@@ -65,8 +70,13 @@ function reducer(state: State, action: Action): State {
         ),
       };
     case 'clearAll':
-      // La configuración de criterios se conserva: no es un archivo temporal.
-      return { ...initialState, settings: state.settings };
+      // La configuración de criterios y el perfil se conservan: no son archivos temporales.
+      return { ...initialState, profile: state.profile, settings: state.settings };
+    case 'signIn':
+      return { ...initialState, profile: action.profile };
+    case 'signOut':
+      // Cambiar de profesor termina la sesión completa: archivos, resultados y criterios.
+      return initialState;
     case 'setSettings':
       return { ...state, settings: action.settings };
     case 'navigate':

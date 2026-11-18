@@ -3,6 +3,7 @@ import { ACCEPTED_EXTENSIONS, extractFile, fileKind } from '../extract';
 import { newId, useStore } from '../state/store';
 import type { DocItem } from '../types';
 import { kindLabel } from './common';
+import { Icon } from './icons';
 
 function baseName(fileName: string): string {
   return fileName.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').trim();
@@ -108,6 +109,9 @@ export function Upload() {
             addFiles(e.dataTransfer.files);
           }}
         >
+          <span className="dropzone-icon">
+            <Icon name="upload" size={28} />
+          </span>
           <p className="dropzone-title">Drag and drop files here</p>
           <p className="muted-text">or</p>
           <button type="button" className="button button-primary" onClick={() => inputRef.current?.click()}>

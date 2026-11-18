@@ -1,8 +1,13 @@
 import { hasAlert } from '../analysis';
+import { HIGH_MATCH_PERCENT } from '../analysis/similarity';
+import type { SimilarityStatus } from '../analysis/types';
 import { SAMPLE_SUBMISSIONS } from '../samples';
-import { newId, nextPending, useStore } from '../state/store';
-import type { DocItem } from '../types';
+import { docLabel, newId, nextPending, useStore } from '../state/store';
+import { firstName, type DocItem } from '../types';
+import { Donut, ProgressSegments, SimilarityBars, type DonutSegment, type Tone } from './charts';
 import { AiBadge, EmptyState, ReviewBadge, SimilarityBadge, kindLabel, percentText } from './common';
+import { Icon, type IconName } from './icons';
+import { STATUS_LABEL, STATUS_TONE } from './tones';
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -11,10 +16,25 @@ function greeting(): string {
   return 'Good evening';
 }
 
+function StatCard({ icon, value, label, tone }: { icon: IconName; value: number; label: string; tone: string }) {
+  return (
+    <div className={`stat card stat-${tone}`}>
+      <span className="stat-icon">
+        <Icon name={icon} size={22} />
+      </span>
+      <span className="stat-body">
+        <span className="stat-value">{value}</span>
+        <span className="stat-label">{label}</span>
+      </span>
+    </div>
+  );
+}
+
 export function Dashboard() {
-  const { state, dispatch, submissions, analysis, go, notify } = useStore();
+  const { state, dispatch, submissions, analysis, docById, go, notify } = useStore();
   const references = state.docs.filter((d) => d.analyzed && d.isReference).length;
   const staged = state.docs.filter((d) => !d.analyzed).length;
+  const profile = state.profile!;
 
   const loadSamples = () => {
     const docs: DocItem[] = SAMPLE_SUBMISSIONS.map((s) => ({
@@ -36,26 +56,80 @@ export function Dashboard() {
   };
 
   const pending = submissions.filter((d) => d.reviewStatus === 'pending');
-  const reviewed = submissions.length - pending.length;
+  const approved = submissions.filter((d) => d.reviewStatus === 'approved').length;
+  const corrections = submissions.filter((d) => d.reviewStatus === 'needs-corrections').length;
+  const reviewed = approved + corrections;
   const alerts = submissions.filter((d) => hasAlert(analysis.byId.get(d.id))).length;
   const next = nextPending(submissions);
+
+  const progress: DonutSegment[] = [
+    { key: 'approved', label: 'Approved', value: approved, tone: 'ok' },
+    { key: 'corrections', label: 'Needs corrections', value: corrections, tone: 'warn' },
+    { key: 'pending', label: 'Pending', value: pending.length, tone: 'neutral' },
+  ];
+
+  const bars = submissions
+    .map((d) => {
+      const a = analysis.byId.get(d.id);
+      const top = a?.similarity.matches[0];
+      return {
+        id: d.id,
+        label: d.studentName,
+        sublabel: d.assignmentTitle,
+        value: a?.similarity.percent ?? 0,
+        tone: a ? STATUS_TONE[a.status] : ('neutral' as Tone),
+        statusLabel: a ? STATUS_LABEL[a.status] : '',
+        detail: top ? `Top match: ${docLabel(docById(top.docId))}` : 'No matches',
+      };
+    })
+    .sort((x, y) => y.value - x.value);
+
+  const statusCounts = (['clear', 'review', 'high'] as SimilarityStatus[]).map((s) => ({
+    s,
+    n: submissions.filter((d) => analysis.byId.get(d.id)?.status === s).length,
+  }));
+  const threshold = state.settings.similarityThreshold;
 
   return (
     <div className="page">
       <section className="page-intro">
-        <h2 className="greeting">{greeting()}, Nalleli.</h2>
-        <p className="muted-text">
-          Review authenticity, format and English writing quality. Files stay in this browser tab only.
-        </p>
+        <div>
+          <h2 className="greeting">
+            {greeting()}, {firstName(profile.name)}.
+          </h2>
+          <p className="muted-text">
+            {profile.group ? `${profile.group} · ` : ''}Review authenticity, format and English writing quality. Files stay in
+            this browser tab only.
+          </p>
+        </div>
+        {submissions.length > 0 && (
+          <button
+            type="button"
+            className="button button-primary button-lg"
+            disabled={!next}
+            onClick={() => next && go('review', next.id)}
+          >
+            {next ? (
+              <>
+                Review next submission <Icon name="arrow" size={18} />
+              </>
+            ) : (
+              <>
+                <Icon name="check" size={18} /> All submissions reviewed
+              </>
+            )}
+          </button>
+        )}
       </section>
 
       {submissions.length === 0 ? (
         <EmptyState
+          icon="inbox"
           title="No submissions in this session yet"
           actions={
             <>
               <button type="button" className="button button-primary" onClick={() => go('upload')}>
-                Upload files
+                <Icon name="upload" size={18} /> Upload files
               </button>
               <button type="button" className="button button-secondary" onClick={loadSamples}>
                 Load sample submissions
@@ -76,21 +150,46 @@ export function Dashboard() {
       ) : (
         <>
           <section className="stats" aria-label="Session summary">
-            <div className="stat card">
-              <span className="stat-value">{submissions.length}</span>
-              <span className="stat-label">Submissions loaded</span>
+            <StatCard icon="inbox" value={submissions.length} label="Submissions loaded" tone="brand" />
+            <StatCard icon="clock" value={pending.length} label="Pending review" tone="neutral" />
+            <StatCard icon="check" value={reviewed} label="Reviewed" tone="ok" />
+            <StatCard icon="alert" value={alerts} label="With alerts" tone={alerts ? 'bad' : 'neutral'} />
+          </section>
+
+          <section className="chart-grid">
+            <div className="card chart-card">
+              <h2>Review progress</h2>
+              <p className="muted-text small">
+                {reviewed} of {submissions.length} submissions reviewed
+              </p>
+              <Donut
+                title="Review progress by decision"
+                segments={progress}
+                centerValue={`${Math.round((reviewed / submissions.length) * 100)}%`}
+                centerLabel="reviewed"
+              />
             </div>
-            <div className="stat card">
-              <span className="stat-value">{pending.length}</span>
-              <span className="stat-label">Pending review</span>
-            </div>
-            <div className="stat card">
-              <span className="stat-value">{reviewed}</span>
-              <span className="stat-label">Reviewed</span>
-            </div>
-            <div className={`stat card${alerts ? ' stat-alert' : ''}`}>
-              <span className="stat-value">{alerts}</span>
-              <span className="stat-label">With alerts</span>
+
+            <div className="card chart-card">
+              <div className="chart-head">
+                <div>
+                  <h2>Similarity by submission</h2>
+                  <p className="muted-text small">Click a bar to open that review.</p>
+                </div>
+                <ul className="chart-legend">
+                  {statusCounts.map(({ s, n }) => (
+                    <li key={s}>
+                      <span className="legend-swatch" style={{ background: `var(--st-${STATUS_TONE[s]})` }} aria-hidden="true" />
+                      {STATUS_LABEL[s]} <span className="legend-value">{n}</span>
+                    </li>
+                  ))}
+                  <li>
+                    <span className="legend-line" aria-hidden="true" />
+                    {threshold < HIGH_MATCH_PERCENT ? `Threshold ${threshold}% · High ${HIGH_MATCH_PERCENT}%` : `High match ${HIGH_MATCH_PERCENT}%`}
+                  </li>
+                </ul>
+              </div>
+              <SimilarityBars rows={bars} threshold={threshold} high={HIGH_MATCH_PERCENT} onSelect={(id) => go('review', id)} />
             </div>
           </section>
 
@@ -99,18 +198,16 @@ export function Dashboard() {
               <div>
                 <h2>Submissions</h2>
                 <p className="muted-text small">
-                  Similarity threshold: {state.settings.similarityThreshold}%
+                  Similarity threshold: {threshold}%
                   {references > 0 && ` · ${references} reference file${references === 1 ? '' : 's'}`}
                 </p>
               </div>
-              <button
-                type="button"
-                className="button button-primary"
-                disabled={!next}
-                onClick={() => next && go('review', next.id)}
-              >
-                {next ? 'Review next submission' : 'All submissions reviewed'}
-              </button>
+              <div className="progress-wrap">
+                <span className="small muted-text">
+                  {reviewed}/{submissions.length} reviewed
+                </span>
+                <ProgressSegments segments={progress} />
+              </div>
             </div>
             <table className="table">
               <thead>
@@ -130,10 +227,19 @@ export function Dashboard() {
                 {submissions.map((d) => {
                   const a = analysis.byId.get(d.id);
                   return (
-                    <tr key={d.id}>
-                      <td className="strong">{d.studentName}</td>
+                    <tr key={d.id} className="row-link" onClick={() => go('review', d.id)}>
+                      <td>
+                        <span className="student-cell">
+                          <span className="mini-avatar" aria-hidden="true">
+                            {d.studentName.charAt(0).toUpperCase()}
+                          </span>
+                          <span className="strong">{d.studentName}</span>
+                        </span>
+                      </td>
                       <td>{d.assignmentTitle}</td>
-                      <td>{kindLabel(d.kind)}</td>
+                      <td>
+                        <span className="file-chip">{kindLabel(d.kind)}</span>
+                      </td>
                       <td>
                         {a && (
                           <span className="cell-flex">
@@ -142,7 +248,16 @@ export function Dashboard() {
                           </span>
                         )}
                       </td>
-                      <td>{a?.ai ? <AiBadge level={a.ai.level} /> : <span className="muted-text">Off</span>}</td>
+                      <td>
+                        {a?.ai ? (
+                          <span className="cell-flex">
+                            <span className="num">{a.ai.percent}%</span>
+                            <AiBadge level={a.ai.level} />
+                          </span>
+                        ) : (
+                          <span className="muted-text">Off</span>
+                        )}
+                      </td>
                       <td>
                         <ReviewBadge status={d.reviewStatus} />
                       </td>
@@ -151,7 +266,10 @@ export function Dashboard() {
                           type="button"
                           className="button button-link"
                           aria-label={`Open review for ${d.studentName}`}
-                          onClick={() => go('review', d.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            go('review', d.id);
+                          }}
                         >
                           Open
                         </button>

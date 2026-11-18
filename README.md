@@ -15,6 +15,8 @@ expresión oral en español e inglés"*. Metodología Scrum.
 
 | Funcionalidad | Qué hace |
 |---|---|
+| Bienvenida del profesor | Al abrir la app, el profesor escribe su nombre, materia y grupo (sin contraseña ni servidor). Aparece en la barra lateral, el saludo y el reporte PDF. "Change teacher" termina la sesión y deja todo limpio para el siguiente profesor. |
+| Dashboard visual | Tarjetas con iconos, dona de progreso de revisión, barras de similitud con la línea del umbral (clic para abrir la revisión) y transiciones suaves. |
 | Carga de documentos | Arrastrar y soltar o seleccionar archivos `.docx`, `.pdf` y `.txt`. Nombre del alumno, título de la tarea y opción de marcar archivos de referencia. |
 | Detección de similitud | Compara cada entrega con las demás y con los archivos de referencia mediante fragmentos de 5 palabras. Nunca consulta internet. |
 | Validación de formato | En `.docx`: fuente, tamaño, interlineado, márgenes y alineación. En todos los formatos: conteo de palabras, título, sección de referencias y estilo de citas (APA 7 / MLA 9 / Chicago). |
@@ -51,7 +53,8 @@ npm install
 npm run dev
 ```
 
-Después abrir <http://localhost:5173>. En el Dashboard vacío, el botón
+Después abrir <http://localhost:5173>. En la bienvenida se puede escribir cualquier nombre o usar
+**"Continue with the demo profile"**. En el Dashboard vacío, el botón
 **"Load sample submissions"** carga 5 entregas de ejemplo para probar la app:
 
 - Las cartas de **Valeria Gómez** y **Luis Hernández** comparten párrafos (demostración de
@@ -133,3 +136,6 @@ src/
   para `.docx`. Para `.pdf` y `.txt` se muestran como *"Not available for this file type"*.
 - Los indicadores de IA son heurísticos y orientativos; en textos cortos son menos confiables.
 - La configuración no se guarda automáticamente: se debe exportar e importar como `.json`.
+- La bienvenida identifica al profesor, pero no es un inicio de sesión con contraseña: no hay cuentas
+  ni servidor (fuera del alcance del proyecto). El perfil se borra al cerrar la pestaña.
+- Las animaciones son discretas y se desactivan si el sistema tiene activado "reducir movimiento".

@@ -1,6 +1,8 @@
 import { HIGH_MATCH_PERCENT } from '../analysis/similarity';
 import { docLabel, useStore } from '../state/store';
+import { MiniBar } from './charts';
 import { EmptyState, SimilarityBadge, percentText } from './common';
+import { STATUS_TONE } from './tones';
 
 export function Plagiarism() {
   const { state, submissions, analysis, docById, go } = useStore();
@@ -10,6 +12,7 @@ export function Plagiarism() {
     return (
       <div className="page">
         <EmptyState
+          icon="plagiarism"
           title="No submissions to compare"
           actions={
             <button type="button" className="button button-primary" onClick={() => go('upload')}>
@@ -62,7 +65,12 @@ export function Plagiarism() {
                 <tr key={d.id}>
                   <td className="strong">{d.studentName}</td>
                   <td>{d.assignmentTitle}</td>
-                  <td className="num">{percentText(a.similarity.percent)}</td>
+                  <td>
+                    <span className="cell-flex">
+                      <MiniBar value={a.similarity.percent} tone={STATUS_TONE[a.status]} />
+                      <span className="num">{percentText(a.similarity.percent)}</span>
+                    </span>
+                  </td>
                   <td>
                     <SimilarityBadge status={a.status} />
                   </td>
