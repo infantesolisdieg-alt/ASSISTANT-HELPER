@@ -1,0 +1,87 @@
+# Assistant Helper — contexto para Claude
+
+Proyecto escolar del Equipo 7 (Secretariado, submódulo "Se comunica usando técnicas de expresión
+oral en español e inglés"). Metodología Scrum. **Entrega v1.0: 2 de diciembre de 2026.**
+
+- **Product Owner:** Mtra. Olvera Castelan Nalleli (la docente usuaria de la app)
+- **Scrum Master:** Diego Infante Solis (quien trabaja conmigo; hablarle en español)
+- **Repositorio:** https://github.com/infantesolisdieg-alt/ASSISTANT-HELPER (rama `main`)
+- **Despliegue:** Vercel, importado desde GitHub → cada `git push` a `main` publica solo.
+  La URL pública de Vercel todavía no la conozco: pedirla para verificar el sitio en vivo.
+
+## Qué es
+
+Aplicación web 100 % del lado del cliente para que la docente revise trabajos de redacción en
+inglés: similitud entre entregas (shingles de 5 palabras, solo contra archivos de la sesión),
+validación de formato (.docx: fuente, tamaño, interlineado, márgenes, alineación; todos: palabras,
+título, referencias, citas APA/MLA/Chicago), calidad de redacción (voz pasiva, oraciones > 35
+palabras, palabras repetidas) e indicadores heurísticos de IA (siempre con aviso de que son
+orientativos). Interfaz 100 % en inglés; comentarios del código en español.
+
+## Reglas que no se deben romper
+
+- Sin backend, sin base de datos, sin llaves de API, sin servicios de pago. Todo en el navegador.
+- No guardar datos: documentos, resultados y perfil viven en memoria. Única excepción: la
+  configuración se exporta/importa como .json (no se guarda sola).
+- No comparar contra internet. No offline/service worker. No soporte para celular: en < 1024 px
+  se muestra "Assistant Helper is available on desktop computers only."
+- `<html lang="en" translate="no">` + `<meta name="google" content="notranslate">`.
+- Estilo formal en tonos de rojo (#8B1E2D, #4A0D16, #F6E7E9…), serif Libre Baskerville para
+  títulos y Source Sans 3 para la interfaz. Contraste ≥ 4.5:1, ningún texto < 12 px.
+
+## Decisiones tomadas en las sesiones (más allá de la guía original)
+
+- **Umbral de similitud:** Clear < umbral; Review de umbral a 29 %; High match ≥ 30 %. Se usa el
+  porcentaje redondeado. Con umbral 30 % no existe "Review" (decisión literal de la guía).
+- **Niveles de IA:** Low < 25 %, Moderate 25–44 %, Elevated ≥ 45 % (calibrados con las muestras).
+- **Márgenes en centímetros** (por defecto 2.54 cm, tolerancia 0.1 cm).
+- **Bienvenida del profesor (v1.1):** el usuario pidió "iniciar sesión / que no sea siempre el
+  mismo profesor". Como el login real está fuera del alcance, se hizo una pantalla de bienvenida
+  sin contraseña: nombre, rol y grupo, solo en memoria. Botón "Continue with the demo profile"
+  (Nalleli). "Change teacher" borra todo (archivos, resultados y configuración).
+- **"Clear temporary files"** borra documentos, resultados, notas y decisiones, pero conserva la
+  configuración y el perfil.
+- **Diseño "formal pero con vida" (elegido por el usuario):** gráficas propias en SVG (dona de
+  progreso, barras de similitud con línea del umbral, indicadores circulares, minibarras),
+  "Highlights", contadores animados, tarjeta "Session complete", transiciones suaves que se
+  desactivan con prefers-reduced-motion. Sin librerías de gráficas.
+- Colores de estado para gráficas validados con el validador de dataviz:
+  ok #2F7D4C, warn #B0760C, bad #A3283A, neutral #A8999B; siempre acompañados de texto.
+- Avisar a la Product Owner: la bienvenida no es un login real y las animaciones son discretas.
+
+## Estructura
+
+```
+src/analysis/   lógica de análisis (una función por tipo) + pruebas *.test.ts
+src/extract/    lectura de .docx (jszip), .pdf (pdfjs-dist, carga diferida), .txt
+src/report/     reporte PDF con jspdf (buildReport / exportReport)
+src/components/ pantallas: Welcome, Dashboard, Upload, Review, Plagiarism, AiIndicators,
+                SettingsScreen; piezas: charts, icons, Insights, CountUp, common (Modal…)
+src/state/store.tsx  estado en memoria (useReducer); analyzeAll se recalcula con useMemo
+src/settings.ts      criterios por defecto y validación del .json importado
+src/samples.ts       5 entregas de ejemplo (dos cartas comparten párrafos; el memo tiene frases de IA)
+```
+
+## Comandos
+
+- `npm run dev` (http://localhost:5173), `npm test` (Vitest, 36 pruebas), `npm run build`.
+- En PowerShell de Claude, Node y Git se instalaron con winget en esta máquina; si un comando
+  no los encuentra, refrescar el PATH:
+  `$env:Path = [Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [Environment]::GetEnvironmentVariable("Path","User")`
+- `git push` desde Claude necesita `$env:GCM_INTERACTIVE = "always"` (la sesión lo trae en
+  "never"); la credencial de GitHub ya quedó guardada en el administrador de credenciales.
+
+## Forma de trabajar que funcionó
+
+- Antes de entregar: `npm test`, `npm run build` y revisar en el navegador las 6 pantallas a
+  1024 px y 1440 px buscando elementos que se salgan del ancho (hubo desbordes en Dashboard).
+- Los modales se renderizan con portal a `<body>` (la barra lateral es sticky y los tapaba).
+- Si el panel del navegador está oculto, las animaciones se pausan: no confiar en capturas para
+  juzgar animaciones; verificar con JavaScript y pedir al usuario que lo vea.
+- Después de cambios, commit + push a `main` para que Vercel publique; mensajes de commit en español.
+
+## Pendientes conocidos
+
+- Obtener la URL de Vercel y verificar el sitio publicado.
+- Probar con trabajos reales de alumnos hechos en Word/PDF (solo se probó con archivos generados).
+- Probar a mano el botón "Export report" (descarga un PDF) y ver las animaciones en pantalla.
