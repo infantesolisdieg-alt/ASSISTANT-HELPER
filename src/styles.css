@@ -981,7 +981,6 @@ mark.hl-plag.hl-ai {
   position: fixed;
   right: 24px;
   bottom: 24px;
-  z-index: 60;
 }
 .toast {
   display: flex;
@@ -1712,4 +1711,90 @@ mark.hl-plag.hl-ai {
 }
 .empty-icon {
   margin-bottom: 14px;
+}
+
+/* ---------- Pantallas medianas (1024–1365 px) ---------- */
+/* Los hijos de la rejilla pueden encogerse en lugar de desbordar la página */
+.page > *,
+.chart-grid > *,
+.review-grid > * {
+  min-width: 0;
+}
+.page-intro {
+  flex-wrap: wrap;
+}
+.toast-region {
+  z-index: 40; /* debajo de los modales (50) */
+}
+@media (max-width: 1365.98px) {
+  .app {
+    grid-template-columns: 236px 1fr;
+  }
+  .sidebar {
+    padding: 20px 12px;
+  }
+  .brand-name {
+    font-size: 16px;
+    white-space: nowrap;
+  }
+  .nav-item {
+    font-size: 14px;
+    padding: 10px 10px;
+    white-space: nowrap;
+  }
+  .content {
+    padding: 24px 24px 40px;
+  }
+  .topbar {
+    padding: 14px 24px;
+  }
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .chart-grid {
+    grid-template-columns: 1fr;
+  }
+  .review-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr);
+  }
+  .review-header {
+    flex-wrap: wrap;
+  }
+  .review-header .select {
+    min-width: 0;
+    width: 100%;
+    max-width: 480px;
+  }
+  .sheet {
+    padding: 40px 36px;
+  }
+  .welcome-hero {
+    padding: 40px 40px;
+  }
+  .welcome-panel {
+    padding: 32px;
+  }
+  .welcome-title {
+    font-size: 28px;
+  }
+  .bars-plot {
+    --name-w: 120px;
+  }
+}
+@media (max-width: 1180px) {
+  .steps {
+    gap: 12px;
+  }
+  .table th,
+  .table td {
+    padding: 8px 8px;
+  }
+  .minibar {
+    width: 48px;
+  }
+  .progress-wrap,
+  .progress-seg {
+    min-width: 0;
+    width: 160px;
+  }
 }

@@ -1,6 +1,7 @@
 // Componentes pequeños reutilizables: insignias de estado, modal y estado vacío.
 
 import { useEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import type { AiLevel, CheckOutcome, SimilarityStatus } from '../analysis/types';
 import { REVIEW_LABEL, type ReviewStatus } from '../types';
 import { Icon, type IconName } from './icons';
@@ -75,7 +76,9 @@ export function Modal({
     };
   }, []);
 
-  return (
+  // Portal a <body>: el modal no debe quedar atrapado en la capa de la barra lateral
+  // (position: sticky) ni debajo del contenido animado de la página.
+  return createPortal(
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className={`modal${wide ? ' modal-wide' : ''}`} role="dialog" aria-modal="true" aria-labelledby="modal-title" ref={ref}>
         <div className="modal-header">
@@ -87,7 +90,8 @@ export function Modal({
         <div className="modal-body">{children}</div>
         <div className="modal-footer">{footer}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
