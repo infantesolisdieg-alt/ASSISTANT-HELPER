@@ -56,7 +56,7 @@ export function Review() {
     setExporting(true);
     try {
       const { exportReport: run } = await import('../report/pdfReport');
-      run(doc, a, state.settings, (id) => docLabel(docById(id)), state.profile);
+      await run(doc, a, state.settings, (id) => docLabel(docById(id)), state.profile);
     } catch {
       notify('The report could not be created. Please try again.');
     } finally {

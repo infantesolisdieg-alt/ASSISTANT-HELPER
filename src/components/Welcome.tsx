@@ -35,9 +35,7 @@ export function Welcome() {
     <div className="welcome">
       <section className="welcome-hero" aria-labelledby="welcome-brand">
         <div className="welcome-brand">
-          <span className="brand-mark brand-mark-light" aria-hidden="true">
-            AH
-          </span>
+          <img className="brand-logo brand-logo-lg" src="/logo-mark.svg" alt="" width="56" height="56" />
           <span id="welcome-brand">Assistant Helper</span>
         </div>
         <h1 className="welcome-title">Review your students’ English writing with confidence.</h1>

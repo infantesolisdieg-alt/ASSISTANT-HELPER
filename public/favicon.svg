@@ -1,1 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#8B1E2D"/><text x="16" y="22" font-family="Georgia, serif" font-size="16" font-weight="700" text-anchor="middle" fill="#ffffff">AH</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="24 16 652 652" width="652" height="652">
+  <!-- Versión recortada y sin sombra del logo, para íconos pequeños (pestaña, barra lateral) -->
+  <defs>
+    <radialGradient id="red" cx="40%" cy="32%" r="75%">
+      <stop offset="0" stop-color="#8f0a0a"/>
+      <stop offset="1" stop-color="#760000"/>
+    </radialGradient>
+  </defs>
+  <circle cx="350" cy="342" r="326" fill="#ffffff"/>
+  <circle cx="350" cy="342" r="314" fill="url(#red)"/>
+  <g fill="none" stroke="#ffffff" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M268 247 C238 249 213 262 213 300 L213 385 Q213 425 253 425 L340 425 L345 477 L404 425 L458 425 Q499 425 499 385 L499 300 C499 262 474 249 444 247"/>
+  </g>
+  <circle cx="293" cy="240" r="27" fill="#ffffff"/>
+  <circle cx="420" cy="240" r="27" fill="#ffffff"/>
+  <g fill="#ffffff">
+    <rect x="262.5" y="318" width="17" height="44" rx="8.5"/>
+    <rect x="307.5" y="306" width="17" height="68" rx="8.5"/>
+    <rect x="352.5" y="293" width="17" height="94" rx="8.5"/>
+    <rect x="395.5" y="306" width="17" height="68" rx="8.5"/>
+    <rect x="439.5" y="318" width="17" height="44" rx="8.5"/>
+  </g>
+</svg>

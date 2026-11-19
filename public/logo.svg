@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 700" width="700" height="700">
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="8" stdDeviation="9" flood-color="#2a1a1c" flood-opacity="0.28"/>
+    </filter>
+    <radialGradient id="red" cx="40%" cy="32%" r="75%">
+      <stop offset="0" stop-color="#8f0a0a"/>
+      <stop offset="1" stop-color="#760000"/>
+    </radialGradient>
+  </defs>
+  <!-- Borde blanco con sombra -->
+  <circle cx="350" cy="342" r="326" fill="#ffffff" filter="url(#shadow)"/>
+  <!-- Círculo rojo -->
+  <circle cx="350" cy="342" r="314" fill="url(#red)"/>
+  <!-- Burbuja de diálogo con "audífonos" -->
+  <g fill="none" stroke="#ffffff" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M268 247 C238 249 213 262 213 300 L213 385 Q213 425 253 425 L340 425 L345 477 L404 425 L458 425 Q499 425 499 385 L499 300 C499 262 474 249 444 247"/>
+  </g>
+  <circle cx="293" cy="240" r="27" fill="#ffffff"/>
+  <circle cx="420" cy="240" r="27" fill="#ffffff"/>
+  <!-- Ondas de sonido -->
+  <g fill="#ffffff">
+    <rect x="262.5" y="318" width="17" height="44" rx="8.5"/>
+    <rect x="307.5" y="306" width="17" height="68" rx="8.5"/>
+    <rect x="352.5" y="293" width="17" height="94" rx="8.5"/>
+    <rect x="395.5" y="306" width="17" height="68" rx="8.5"/>
+    <rect x="439.5" y="318" width="17" height="44" rx="8.5"/>
+  </g>
+</svg>

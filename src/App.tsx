@@ -62,6 +62,7 @@ export default function App() {
     <StoreProvider>
       <div className="desktop-only" role="alert">
         <div>
+          <img className="desktop-only-logo" src="/logo-mark.svg" alt="" width="96" height="96" />
           <p className="desktop-only-brand">Assistant Helper</p>
           <p>Assistant Helper is available on desktop computers only.</p>
         </div>

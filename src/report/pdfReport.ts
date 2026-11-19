@@ -24,14 +24,29 @@ function clean(s: string): string {
     .replace(/[^\x00-\xFF]/g, '');
 }
 
-export function exportReport(
+/** Logo de la app como data URL para el encabezado del reporte (si no carga, el reporte sale sin logo). */
+async function loadLogo(): Promise<string | undefined> {
+  try {
+    const blob = await (await fetch('/logo-512.png')).blob();
+    return await new Promise((resolve) => {
+      const r = new FileReader();
+      r.onload = () => resolve(typeof r.result === 'string' ? r.result : undefined);
+      r.onerror = () => resolve(undefined);
+      r.readAsDataURL(blob);
+    });
+  } catch {
+    return undefined;
+  }
+}
+
+export async function exportReport(
   doc: DocItem,
   a: DocAnalysis,
   settings: Settings,
   labelOf: (id: string) => string,
   reviewer?: TeacherProfile | null,
-): void {
-  const pdf = buildReport(doc, a, settings, labelOf, reviewer);
+): Promise<void> {
+  const pdf = buildReport(doc, a, settings, labelOf, reviewer, await loadLogo());
   const safe = `${doc.studentName}-${doc.assignmentTitle}`
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
@@ -47,6 +62,7 @@ export function buildReport(
   settings: Settings,
   labelOf: (id: string) => string,
   reviewer?: TeacherProfile | null,
+  logo?: string,
 ): jsPDF {
   const pdf = new jsPDF({ unit: 'pt', format: 'letter' });
   const margin = 56;
@@ -85,6 +101,13 @@ export function buildReport(
   // Encabezado
   pdf.setFillColor(74, 13, 22);
   pdf.rect(0, 0, pdf.internal.pageSize.getWidth(), 6, 'F');
+  if (logo) {
+    try {
+      pdf.addImage(logo, 'PNG', pdf.internal.pageSize.getWidth() - margin - 46, margin - 14, 46, 46);
+    } catch {
+      // sin logo si la imagen no es válida
+    }
+  }
   text('Assistant Helper - Submission report', { size: 18, bold: true, color: RED, gap: 6 });
   text(`Student: ${doc.studentName}`, { size: 11 });
   text(`Assignment: ${doc.assignmentTitle}`, { size: 11 });

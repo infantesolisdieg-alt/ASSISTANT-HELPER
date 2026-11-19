@@ -34,9 +34,7 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="brand">
-        <span className="brand-mark" aria-hidden="true">
-          AH
-        </span>
+        <img className="brand-logo" src="/logo-mark.svg" alt="" width="40" height="40" />
         <span className="brand-name">Assistant Helper</span>
       </div>
 
