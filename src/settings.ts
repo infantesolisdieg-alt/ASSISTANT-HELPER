@@ -23,6 +23,7 @@ export const CHECK_KEYS = [
   'passiveVoice',
   'longSentences',
   'repeatedWords',
+  'tablesFigures',
   'aiIndicators',
 ] as const;
 
@@ -41,6 +42,7 @@ export const CHECK_LABELS: Record<CheckKey, string> = {
   passiveVoice: 'Passive voice',
   longSentences: 'Long sentences',
   repeatedWords: 'Repeated words',
+  tablesFigures: 'Tables, figures & charts',
   aiIndicators: 'AI indicators',
 };
 

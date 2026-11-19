@@ -123,5 +123,5 @@ export function percentText(p: number): string {
 }
 
 export function kindLabel(kind: string): string {
-  return '.' + kind;
+  return kind === 'image' ? 'image' : '.' + kind;
 }

@@ -1,5 +1,6 @@
 import { AiIndicators } from './components/AiIndicators';
 import { Dashboard } from './components/Dashboard';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Plagiarism } from './components/Plagiarism';
 import { Review } from './components/Review';
 import { SettingsScreen } from './components/SettingsScreen';
@@ -29,7 +30,7 @@ function CurrentView() {
 }
 
 function Shell() {
-  const { state } = useStore();
+  const { state, go } = useStore();
   if (!state.profile) {
     return (
       <div className="app app-welcome">
@@ -45,7 +46,9 @@ function Shell() {
         <main className="content" id="main-content">
           {/* La key reinicia la transición suave al cambiar de pantalla */}
           <div className="view-transition" key={state.view}>
-            <CurrentView />
+            <ErrorBoundary onHome={() => go('dashboard')}>
+              <CurrentView />
+            </ErrorBoundary>
           </div>
         </main>
       </div>

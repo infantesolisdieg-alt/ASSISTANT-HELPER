@@ -7,6 +7,7 @@ import { docLabel, newId, useStore } from '../state/store';
 import type { DocItem } from '../types';
 import { Gauge, MiniBar } from './charts';
 import { AiBadge, OutcomeBadge, SimilarityBadge, percentText } from './common';
+import { FiguresPanel } from './FiguresPanel';
 import { Icon } from './icons';
 import { AI_TONE, STATUS_TONE } from './tones';
 
@@ -62,6 +63,7 @@ export function ResultsPanel({
   const groups: { key: CheckResult['group']; title: string }[] = [
     { key: 'format', title: 'Format' },
     { key: 'writing', title: 'Writing quality' },
+    { key: 'figures', title: 'Tables, figures & charts' },
     { key: 'custom', title: 'Custom rules' },
   ];
 
@@ -150,6 +152,8 @@ export function ResultsPanel({
           );
         })}
       </section>
+
+      <FiguresPanel doc={doc} />
 
       <section className="card result-section" aria-labelledby="ai-title">
         <h3 id="ai-title">AI indicators</h3>

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CITATION_EXAMPLE } from '../analysis/citations';
 import { lineSpacingLabel } from '../analysis/format';
 import {
@@ -17,6 +17,57 @@ import {
 } from '../settings';
 import { newId, useStore } from '../state/store';
 
+/**
+ * Campo numérico que permite borrar y escribir libremente: guarda el valor solo cuando es
+ * un número válido dentro del rango, y al salir del campo regresa al último valor válido.
+ */
+function NumberField({
+  id,
+  value,
+  min,
+  max,
+  step,
+  onCommit,
+  label,
+  invalid,
+}: {
+  id: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onCommit: (v: number) => void;
+  label?: string;
+  invalid?: boolean;
+}) {
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => setDraft(String(value)), [value]);
+  const n = Number(draft);
+  const bad = draft.trim() === '' || !Number.isFinite(n) || n < min || n > max;
+  return (
+    <>
+      <input
+        id={id}
+        className={`input${invalid || bad ? ' input-invalid' : ''}`}
+        type="number"
+        inputMode="decimal"
+        min={min}
+        max={max}
+        step={step}
+        aria-label={label}
+        aria-invalid={bad || undefined}
+        value={draft}
+        onChange={(e) => {
+          setDraft(e.target.value);
+          const v = Number(e.target.value);
+          if (e.target.value.trim() !== '' && Number.isFinite(v) && v >= min && v <= max) onCommit(v);
+        }}
+        onBlur={() => setDraft(String(value))}
+      />
+    </>
+  );
+}
+
 const FONTS = ['Times New Roman', 'Arial', 'Calibri', 'Cambria', 'Georgia', 'Garamond', 'Verdana', 'Aptos'];
 
 export function SettingsScreen() {
@@ -28,12 +79,6 @@ export function SettingsScreen() {
   const [importError, setImportError] = useState<string | null>(null);
 
   const update = (patch: Partial<Settings>) => dispatch({ type: 'setSettings', settings: { ...s, ...patch } });
-  const numberField = (key: 'fontSizePt' | 'marginsCm' | 'minWords' | 'maxWords', value: string) => {
-    const n = Number(value);
-    if (value === '' || !Number.isFinite(n) || n < 0) return;
-    update({ [key]: n } as Partial<Settings>);
-  };
-
   const addRule = () => {
     const value = ruleValue.trim();
     if (!value) return;
@@ -165,16 +210,7 @@ export function SettingsScreen() {
             <label className="field-label" htmlFor="font-size">
               Font size (pt)
             </label>
-            <input
-              id="font-size"
-              className="input"
-              type="number"
-              min={6}
-              max={32}
-              step={0.5}
-              value={s.fontSizePt}
-              onChange={(e) => numberField('fontSizePt', e.target.value)}
-            />
+            <NumberField id="font-size" value={s.fontSizePt} min={6} max={32} step={0.5} onCommit={(v) => update({ fontSizePt: v })} />
           </div>
 
           <div className="field">
@@ -199,16 +235,7 @@ export function SettingsScreen() {
             <label className="field-label" htmlFor="margins">
               Margins (cm, all sides)
             </label>
-            <input
-              id="margins"
-              className="input"
-              type="number"
-              min={0.5}
-              max={6}
-              step={0.01}
-              value={s.marginsCm}
-              onChange={(e) => numberField('marginsCm', e.target.value)}
-            />
+            <NumberField id="margins" value={s.marginsCm} min={0.5} max={6} step={0.01} onCommit={(v) => update({ marginsCm: v })} />
             <p className="form-hint">2.54 cm = 1 inch.</p>
           </div>
 
@@ -235,22 +262,26 @@ export function SettingsScreen() {
               Word count
             </span>
             <div className="inline-fields" role="group" aria-labelledby="word-range-label">
-              <input
-                className={`input${wordRangeInvalid ? ' input-invalid' : ''}`}
-                type="number"
-                min={0}
-                aria-label="Minimum words"
+              <NumberField
+                id="min-words"
+                label="Minimum words"
+                invalid={wordRangeInvalid}
                 value={s.minWords}
-                onChange={(e) => numberField('minWords', e.target.value)}
+                min={0}
+                max={100000}
+                step={10}
+                onCommit={(v) => update({ minWords: v })}
               />
               <span>to</span>
-              <input
-                className={`input${wordRangeInvalid ? ' input-invalid' : ''}`}
-                type="number"
-                min={1}
-                aria-label="Maximum words"
+              <NumberField
+                id="max-words"
+                label="Maximum words"
+                invalid={wordRangeInvalid}
                 value={s.maxWords}
-                onChange={(e) => numberField('maxWords', e.target.value)}
+                min={1}
+                max={100000}
+                step={10}
+                onCommit={(v) => update({ maxWords: v })}
               />
             </div>
             {wordRangeInvalid && <p className="form-hint text-bad">The minimum is greater than the maximum.</p>}

@@ -1,4 +1,4 @@
-import type { DocxFormat, FileKind } from './extract/types';
+import type { DocBlock, DocxFormat, FigureInfo, FileKind, PageLayout, TableInfo } from './extract/types';
 
 export type ReviewStatus = 'pending' | 'approved' | 'needs-corrections';
 
@@ -38,14 +38,26 @@ export interface DocItem {
   id: string;
   fileName: string;
   kind: FileKind;
+  fileSize?: number;
   studentName: string;
   assignmentTitle: string;
   isReference: boolean;
   /** Texto completo: párrafos separados por una línea en blanco. */
   text: string;
+  /** Inicio y fin de cada párrafo dentro de `text`. */
+  paraRanges?: [number, number][];
   docxFormat?: DocxFormat;
+  /** URL temporal (blob:) del archivo original, para PDF e imágenes. */
+  sourceUrl?: string;
+  pages?: PageLayout[];
+  blocks?: DocBlock[];
+  tables?: TableInfo[];
+  figures?: FigureInfo[];
+  ocrConfidence?: number;
+  skippedPages?: number;
   /** 'reading' mientras se extrae el texto; 'error' si no se pudo leer. */
   state: 'reading' | 'ready' | 'error';
+  progress?: { label: string; value: number };
   error?: string;
   /** true cuando la docente presionó "Analyze" en la pantalla Upload. */
   analyzed: boolean;
@@ -60,3 +72,12 @@ export const REVIEW_LABEL: Record<ReviewStatus, string> = {
   approved: 'Approved',
   'needs-corrections': 'Needs corrections',
 };
+
+/** Libera las URLs temporales de un documento (el archivo original y sus imágenes). */
+export function releaseDoc(d: DocItem): void {
+  if (d.sourceUrl) {
+    URL.revokeObjectURL(d.sourceUrl);
+    if (d.kind === 'pdf') import('./extract/pdf').then((m) => m.closePdf(d.sourceUrl!)).catch(() => undefined);
+  }
+  for (const f of d.figures ?? []) if (f.src) URL.revokeObjectURL(f.src);
+}

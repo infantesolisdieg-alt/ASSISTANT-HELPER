@@ -1,51 +1,24 @@
-// Visor tipo hoja con resaltados de similitud (plagio) y de indicadores de IA.
+// Visor del documento: vista "Original" (como el archivo) o vista "Text" (texto extraído),
+// con resaltados de similitud (plagio) y de indicadores de IA.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { DocItem } from '../types';
+import { Icon } from './icons';
+import { buildSegments, type Highlight } from './highlights';
+import { OriginalView, hasOriginalView } from './OriginalView';
 
-export interface Highlight {
-  start: number;
-  end: number;
-  title: string;
-  /** Documentos de origen (solo para similitud): permite enfatizar los pasajes de uno. */
-  sources?: string[];
-}
+export type { Highlight };
 
-interface Segment {
-  text: string;
-  plag: Highlight | null;
-  ai: string | null;
-}
-
-export function buildSegments(text: string, plag: Highlight[], ai: Highlight[]): Segment[] {
-  const bounds = new Set<number>([0, text.length]);
-  for (const h of [...plag, ...ai]) {
-    bounds.add(Math.max(0, Math.min(text.length, h.start)));
-    bounds.add(Math.max(0, Math.min(text.length, h.end)));
-  }
-  const sorted = [...bounds].sort((a, b) => a - b);
-  const out: Segment[] = [];
-  for (let i = 0; i < sorted.length - 1; i++) {
-    const s = sorted[i];
-    const e = sorted[i + 1];
-    if (e <= s) continue;
-    const p = plag.find((h) => h.start <= s && h.end >= e);
-    const a = ai.find((h) => h.start <= s && h.end >= e);
-    out.push({ text: text.slice(s, e), plag: p ?? null, ai: a?.title ?? null });
-  }
-  return out;
-}
 
 export function DocumentViewer({
-  text,
-  title,
+  doc,
   plag,
   ai,
   aiEnabled,
   emphasize,
   jumpToken,
 }: {
-  text: string;
-  title: string;
+  doc: DocItem;
   plag: Highlight[];
   ai: Highlight[];
   aiEnabled: boolean;
@@ -54,55 +27,91 @@ export function DocumentViewer({
   /** Cambia cada vez que se pide saltar al primer pasaje enfatizado. */
   jumpToken?: number;
 }) {
+  const canOriginal = hasOriginalView(doc);
+  const [mode, setMode] = useState<'original' | 'text'>(canOriginal ? 'original' : 'text');
   const [showPlag, setShowPlag] = useState(true);
   const [showAi, setShowAi] = useState(true);
-  const sheetRef = useRef<HTMLElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const title = `${doc.studentName} — ${doc.assignmentTitle}`;
+  const shownPlag = showPlag ? plag : [];
+  const shownAi = showAi && aiEnabled ? ai : [];
+
   const segments = useMemo(
-    () => buildSegments(text, showPlag ? plag : [], showAi && aiEnabled ? ai : []),
-    [text, plag, ai, showPlag, showAi, aiEnabled],
+    () => (mode === 'text' ? buildSegments(doc.text, shownPlag, shownAi) : []),
+    [mode, doc.text, shownPlag, shownAi],
   );
 
   useEffect(() => {
     if (!jumpToken) return;
     setShowPlag(true);
     const t = window.setTimeout(() => {
-      sheetRef.current?.querySelector('.hl-focus')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 30);
+      scrollRef.current?.querySelector('.hl-focus, .ov-focus')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 40);
     return () => window.clearTimeout(t);
   }, [jumpToken]);
+
+  const ocrPages = doc.pages?.filter((p) => p.ocr).length ?? 0;
 
   return (
     <section className="viewer card" aria-label="Document viewer">
       <div className="viewer-toolbar">
+        {canOriginal && (
+          <div className="segmented" role="group" aria-label="Viewer mode">
+            <button type="button" aria-pressed={mode === 'original'} onClick={() => setMode('original')}>
+              <Icon name="review" size={15} /> Original
+            </button>
+            <button type="button" aria-pressed={mode === 'text'} onClick={() => setMode('text')}>
+              <Icon name="pen" size={15} /> Text
+            </button>
+          </div>
+        )}
         <div className="legend" aria-label="Highlight legend">
           <label className="checkbox">
             <input type="checkbox" checked={showPlag} onChange={(e) => setShowPlag(e.target.checked)} />
             <span className="swatch swatch-plag" aria-hidden="true" />
-            Similarity matches ({plag.length})
+            Similarity ({plag.length})
           </label>
           {aiEnabled && (
             <label className="checkbox">
               <input type="checkbox" checked={showAi} onChange={(e) => setShowAi(e.target.checked)} />
               <span className="swatch swatch-ai" aria-hidden="true" />
-              AI indicator sentences ({ai.length})
+              AI indicators ({ai.length})
             </label>
           )}
         </div>
       </div>
-      <div className="sheet-scroll">
-        <article className={`sheet${emphasize ? ' has-focus' : ''}`} aria-label={title} ref={sheetRef}>
-          {segments.map((seg, i) => {
-            if (!seg.plag && !seg.ai) return <span key={i}>{seg.text}</span>;
-            const focused = !!(emphasize && seg.plag?.sources?.includes(emphasize));
-            const cls = [seg.plag ? 'hl-plag' : '', seg.ai ? 'hl-ai' : '', focused ? 'hl-focus' : ''].join(' ').trim();
-            const label = [seg.plag?.title, seg.ai].filter(Boolean).join(' · ');
-            return (
-              <mark key={i} className={cls} title={label}>
-                {seg.text}
-              </mark>
-            );
-          })}
-        </article>
+
+      {(ocrPages > 0 || doc.skippedPages) && (
+        <div className="viewer-note">
+          <Icon name="alert" size={15} />
+          <span>
+            {ocrPages > 0 &&
+              `Text on ${doc.kind === 'image' ? 'this image' : `${ocrPages} page${ocrPages === 1 ? '' : 's'}`} was recognized automatically (OCR${
+                doc.ocrConfidence ? `, ${Math.round(doc.ocrConfidence)}% confidence` : ''
+              }). Compare unusual words with the original. `}
+            {doc.skippedPages ? `${doc.skippedPages} scanned page(s) were not read (limit reached).` : ''}
+          </span>
+        </div>
+      )}
+
+      <div className="sheet-scroll" ref={scrollRef}>
+        {mode === 'original' && canOriginal ? (
+          <OriginalView doc={doc} plag={shownPlag} ai={shownAi} emphasize={emphasize} />
+        ) : (
+          <article className={`sheet${emphasize ? ' has-focus' : ''}`} aria-label={title}>
+            {segments.map((seg, i) => {
+              if (!seg.plag && !seg.ai) return <span key={i}>{seg.text}</span>;
+              const focused = !!(emphasize && seg.plag?.sources?.includes(emphasize));
+              const cls = [seg.plag ? 'hl-plag' : '', seg.ai ? 'hl-ai' : '', focused ? 'hl-focus' : ''].join(' ').trim();
+              const label = [seg.plag?.title, seg.ai].filter(Boolean).join(' · ');
+              return (
+                <mark key={i} className={cls} title={label}>
+                  {seg.text}
+                </mark>
+              );
+            })}
+          </article>
+        )}
       </div>
     </section>
   );

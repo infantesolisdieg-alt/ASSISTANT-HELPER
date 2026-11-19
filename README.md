@@ -18,7 +18,10 @@ expresión oral en español e inglés"*. Metodología Scrum.
 | Bienvenida del profesor | Al abrir la app, el profesor escribe su nombre, materia y grupo (sin contraseña ni servidor). Aparece en la barra lateral, el saludo y el reporte PDF. "Change teacher" termina la sesión y deja todo limpio para el siguiente profesor. |
 | Dashboard visual | Tarjetas con contadores animados, "Highlights" con hallazgos automáticos (par más parecido, IA elevada, problema de formato más común, pendientes), dona de progreso, barras de similitud con la línea del umbral y aviso de "Session complete" al terminar. |
 | Revisión ágil | Botones anterior/siguiente ("Submission 2 of 5"); al señalar un documento coincidente se resaltan sus pasajes en el visor y con un clic se salta a ellos. |
-| Carga de documentos | Arrastrar y soltar o seleccionar archivos `.docx`, `.pdf` y `.txt`. Nombre del alumno, título de la tarea y opción de marcar archivos de referencia. |
+| Carga de documentos | Arrastrar y soltar o seleccionar archivos `.docx`, `.pdf`, `.txt` e imágenes (`.png`, `.jpg`, `.webp`), con barra de progreso, límite de 30 MB y aviso de archivos repetidos. Nombre del alumno, título de la tarea y opción de marcar archivos de referencia. |
+| Documentos tal cual | Vista "Original": las páginas reales del PDF, la imagen y el Word con sus tablas, imágenes y gráficas, con los resaltados dibujados encima. Vista "Text" con el texto extraído. |
+| OCR en el navegador | Los PDF escaneados y las imágenes se leen con tesseract.js dentro del navegador (la imagen nunca se sube; solo se descargan una vez los datos del idioma inglés). Máximo 15 páginas escaneadas por PDF. |
+| Tablas, figuras y gráficas | Detecta tablas, imágenes y gráficas de Word (tipo, título, series y valores), revisa que tengan título numerado ("Table 1", "Figure 1"), que se mencionen en el texto y que las gráficas tengan ejes con nombre. Botón para leer el texto dentro de una imagen. |
 | Detección de similitud | Compara cada entrega con las demás y con los archivos de referencia mediante fragmentos de 5 palabras. Nunca consulta internet. |
 | Validación de formato | En `.docx`: fuente, tamaño, interlineado, márgenes y alineación. En todos los formatos: conteo de palabras, título, sección de referencias y estilo de citas (APA 7 / MLA 9 / Chicago). |
 | Indicadores de IA | Frases típicas, variación de longitud de oraciones, diversidad de vocabulario, inicios repetitivos y cambios de estilo. Son orientativos, no determinantes. |
@@ -132,7 +135,9 @@ src/
 ## Limitaciones conocidas
 
 - La similitud solo se calcula contra los archivos cargados en la misma sesión (por diseño).
-- Los PDF escaneados (imágenes) no tienen texto que se pueda leer; la app lo indica al cargarlos.
+- El OCR puede equivocarse con letra a mano, fotos borrosas o tipografías raras; la app muestra la confianza del reconocimiento.
+- En PDF, las tablas y las gráficas vectoriales se detectan por su título ("Table 1", "Figure 1"); sus datos solo se leen en las gráficas nativas de Word.
+- La app no interpreta el significado de una gráfica (eso requeriría IA en un servidor); revisa su estructura y sus títulos.
 - Las revisiones de fuente, tamaño, interlineado, márgenes y alineación solo están disponibles
   para `.docx`. Para `.pdf` y `.txt` se muestran como *"Not available for this file type"*.
 - Los indicadores de IA son heurísticos y orientativos; en textos cortos son menos confiables.

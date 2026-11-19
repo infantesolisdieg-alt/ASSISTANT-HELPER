@@ -127,8 +127,7 @@ export function Review() {
       <div className="review-grid">
         <DocumentViewer
           key={doc.id}
-          text={doc.text}
-          title={`${doc.studentName} — ${doc.assignmentTitle}`}
+          doc={doc}
           plag={plagHighlights}
           ai={aiHighlights}
           aiEnabled={!!a.ai}

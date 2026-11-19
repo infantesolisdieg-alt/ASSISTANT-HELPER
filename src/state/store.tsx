@@ -1,10 +1,10 @@
 // Estado de la sesión: todo vive en memoria (useReducer). Al cerrar o recargar la pestaña
 // se pierde todo; no se usa localStorage ni ningún servidor.
 
-import { createContext, useCallback, useContext, useMemo, useReducer, useRef, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react';
 import { analyzeAll, type SessionAnalysis } from '../analysis';
 import { DEFAULT_SETTINGS, type Settings } from '../settings';
-import type { DocItem, Note, ReviewStatus, TeacherProfile } from '../types';
+import { releaseDoc, type DocItem, type Note, type ReviewStatus, type TeacherProfile } from '../types';
 
 export type View = 'dashboard' | 'upload' | 'review' | 'plagiarism' | 'ai' | 'settings';
 
@@ -99,6 +99,8 @@ interface StoreValue {
   docById: (id: string) => DocItem | undefined;
   go: (view: View, selectedId?: string | null) => void;
   notify: (message: string) => void;
+  /** ¿El documento sigue en la sesión? (para tareas asíncronas que terminan tarde) */
+  hasDoc: (id: string) => boolean;
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -122,9 +124,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const go = useCallback((view: View, selectedId?: string | null) => dispatch({ type: 'navigate', view, selectedId }), []);
   const notify = useCallback((message: string) => dispatch({ type: 'toast', message }), []);
 
+  // Todos los documentos actuales (incluye los que se están leyendo)
+  const allDocsRef = useRef(state.docs);
+  allDocsRef.current = state.docs;
+  const hasDoc = useCallback((id: string) => allDocsRef.current.some((d) => d.id === id), []);
+
+  // Libera las URLs temporales (archivo original, imágenes) de los documentos que se quitaron
+  const prevDocs = useRef<DocItem[]>([]);
+  useEffect(() => {
+    const now = new Set(state.docs.map((d) => d.id));
+    for (const d of prevDocs.current) if (!now.has(d.id)) releaseDoc(d);
+    prevDocs.current = state.docs;
+  }, [state.docs]);
+  // Y todas al cerrar la app
+  useEffect(() => () => prevDocs.current.forEach(releaseDoc), []);
+
   const value = useMemo(
-    () => ({ state, dispatch, analysis, submissions, docById, go, notify }),
-    [state, analysis, submissions, docById, go, notify],
+    () => ({ state, dispatch, analysis, submissions, docById, go, notify, hasDoc }),
+    [state, analysis, submissions, docById, go, notify, hasDoc],
   );
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }

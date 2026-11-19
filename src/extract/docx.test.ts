@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
+import { parseChartXml } from './chart';
 import { parseDocxXml } from './docx';
 import { paragraphsFromPlainText } from './lines';
 
@@ -79,5 +80,67 @@ describe('paragraphsFromPlainText', () => {
     const wrapped = 'This is a long line of text that was wrapped by the editor at a fixed\nwidth and continues here.';
     const p = paragraphsFromPlainText(`Ana López\r\nMexico City\r\n\r\n${wrapped}`);
     expect(p).toEqual(['Ana López\nMexico City', wrapped.replace('\n', ' ')]);
+  });
+});
+
+describe('tables, figures and charts', () => {
+  const NS = `${W} xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"`;
+  const p = (t: string) => `<w:p><w:r><w:t xml:space="preserve">${t}</w:t></w:r></w:p>`;
+  const cell = (t: string) => `<w:tc>${p(t)}</w:tc>`;
+  const drawing = (inner: string) => `<w:p><w:r><w:drawing><a:graphic><a:graphicData>${inner}</a:graphicData></a:graphic></w:drawing></w:r></w:p>`;
+  const xml = `<?xml version="1.0"?><w:document ${NS}><w:body>
+    ${p('Table 1 Monthly sales')}
+    <w:tbl><w:tr>${cell('Month')}${cell('Sales')}</w:tr><w:tr>${cell('May')}${cell('120')}</w:tr></w:tbl>
+    ${drawing('<a:blip r:embed="rId5"/>')}
+    ${p('Figure 1 Office layout')}
+    ${drawing('<c:chart r:id="rId6"/>')}
+    ${p('Figure 2 Sales by quarter')}
+  </w:body></w:document>`;
+
+  it('keeps document order, table cells and captions', () => {
+    const r = parseDocxXml(xml, null, null);
+    expect(r.blocks.map((b) => b.type)).toEqual(['p', 'table', 'figure', 'p', 'figure', 'p']);
+    expect(r.tables[0]).toMatchObject({ rows: [['Month', 'Sales'], ['May', '120']], caption: 'Table 1 Monthly sales' });
+    expect(r.figures.map((f) => [f.kind, f.ref.rId, f.caption])).toEqual([
+      ['image', 'rId5', 'Figure 1 Office layout'],
+      ['chart', 'rId6', 'Figure 2 Sales by quarter'],
+    ]);
+    // Las celdas también forman parte del texto analizado
+    expect(r.paragraphs).toContain('May');
+  });
+});
+
+describe('parseChartXml', () => {
+  it('reads type, title, series, categories and axis titles', () => {
+    const chart = `<?xml version="1.0"?>
+      <c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+      <c:chart><c:title><c:tx><c:rich><a:p><a:r><a:t>Sales 2026</a:t></a:r></a:p></c:rich></c:tx></c:title>
+      <c:plotArea><c:barChart><c:barDir val="col"/>
+        <c:ser><c:tx><c:strRef><c:strCache><c:pt idx="0"><c:v>Revenue</c:v></c:pt></c:strCache></c:strRef></c:tx>
+          <c:cat><c:strRef><c:strCache><c:pt idx="0"><c:v>Q1</c:v></c:pt><c:pt idx="1"><c:v>Q2</c:v></c:pt></c:strCache></c:strRef></c:cat>
+          <c:val><c:numRef><c:numCache><c:pt idx="0"><c:v>10</c:v></c:pt><c:pt idx="1"><c:v>15.5</c:v></c:pt></c:numCache></c:numRef></c:val></c:ser>
+      </c:barChart>
+      <c:catAx><c:title><c:tx><c:rich><a:p><a:r><a:t>Quarter</a:t></a:r></a:p></c:rich></c:tx></c:title></c:catAx>
+      <c:valAx><c:title><c:tx><c:rich><a:p><a:r><a:t>Thousands</a:t></a:r></a:p></c:rich></c:tx></c:title></c:valAx>
+      </c:plotArea></c:chart></c:chartSpace>`;
+    expect(parseChartXml(chart)).toEqual({
+      type: 'Column chart',
+      title: 'Sales 2026',
+      categories: ['Q1', 'Q2'],
+      series: [{ name: 'Revenue', values: [10, 15.5] }],
+      axisTitles: ['Quarter', 'Thousands'],
+    });
+  });
+});
+
+describe('styles without styles.xml', () => {
+  it('detects Title and Heading styles by their id', () => {
+    const xml = `<?xml version="1.0"?><w:document ${W}><w:body>
+      <w:p><w:pPr><w:pStyle w:val="Title"/></w:pPr><w:r><w:t>Report</w:t></w:r></w:p>
+      <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Intro</w:t></w:r></w:p>
+    </w:body></w:document>`;
+    const r = parseDocxXml(xml, null, null);
+    expect(r.format.hasTitleStyle).toBe(true);
+    expect(r.blocks.map((b) => (b.type === 'p' ? b.style : b.type))).toEqual(['title', 'heading']);
   });
 });

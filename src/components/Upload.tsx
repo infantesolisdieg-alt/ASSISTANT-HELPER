@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { ACCEPTED_EXTENSIONS, extractFile, fileKind } from '../extract';
+import { ACCEPTED_EXTENSIONS, ACCEPTED_LABEL, MAX_FILE_MB, extractFile, fileKind, needsSourceUrl } from '../extract';
+import { paragraphRanges } from '../extract/types';
 import { newId, useStore } from '../state/store';
 import type { DocItem } from '../types';
 import { Icon } from './icons';
@@ -9,7 +10,7 @@ function baseName(fileName: string): string {
 }
 
 export function Upload() {
-  const { state, dispatch, submissions, go, notify } = useStore();
+  const { state, dispatch, submissions, go, notify, hasDoc } = useStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [rejected, setRejected] = useState<string[]>([]);
@@ -19,28 +20,54 @@ export function Upload() {
 
   const addFiles = (files: FileList | File[]) => {
     const list = Array.from(files);
-    const bad = list.filter((f) => !fileKind(f.name)).map((f) => f.name);
-    setRejected(bad);
-    const good = list.filter((f) => fileKind(f.name));
-    const items: DocItem[] = good.map((f) => ({
-      id: newId(),
-      fileName: f.name,
-      kind: fileKind(f.name)!,
-      studentName: '',
-      assignmentTitle: baseName(f.name),
-      isReference: false,
-      text: '',
-      state: 'reading',
-      analyzed: false,
-      reviewStatus: 'pending',
-      finalComment: '',
-      notes: [],
-    }));
+    const problems: string[] = [];
+    const good: File[] = [];
+    for (const f of list) {
+      if (!fileKind(f.name)) problems.push(`${f.name}: only ${ACCEPTED_LABEL} are supported.`);
+      else if (f.size > MAX_FILE_MB * 1024 * 1024) problems.push(`${f.name}: the file is larger than ${MAX_FILE_MB} MB.`);
+      else if (state.docs.some((d) => d.fileName === f.name && d.fileSize === f.size) || good.some((g) => g.name === f.name && g.size === f.size))
+        problems.push(`${f.name}: this file is already loaded.`);
+      else good.push(f);
+    }
+    setRejected(problems);
+
+    const items: DocItem[] = good.map((f) => {
+      const kind = fileKind(f.name)!;
+      return {
+        id: newId(),
+        fileName: f.name,
+        fileSize: f.size,
+        kind,
+        studentName: '',
+        assignmentTitle: baseName(f.name),
+        isReference: false,
+        text: '',
+        sourceUrl: needsSourceUrl(kind) ? URL.createObjectURL(f) : undefined,
+        state: 'reading',
+        progress: { label: 'Waiting…', value: 0 },
+        analyzed: false,
+        reviewStatus: 'pending',
+        finalComment: '',
+        notes: [],
+      };
+    });
     if (items.length) dispatch({ type: 'addDocs', docs: items });
 
     items.forEach((item, i) => {
-      extractFile(good[i])
+      let last = 0;
+      const onProgress = (label: string, value: number) => {
+        const now = performance.now();
+        if (now - last < 120 && value < 1) return; // no saturar la interfaz
+        last = now;
+        dispatch({ type: 'updateDoc', id: item.id, patch: { progress: { label, value } } });
+      };
+      extractFile(good[i], item.sourceUrl, onProgress)
         .then((res) => {
+          if (!hasDoc(item.id)) {
+            // La docente quitó el archivo mientras se leía: se liberan sus imágenes
+            for (const f of res.figures ?? []) if (f.src) URL.revokeObjectURL(f.src);
+            return;
+          }
           const text = res.paragraphs.join('\n\n');
           if (!text.trim()) {
             dispatch({
@@ -48,21 +75,38 @@ export function Upload() {
               id: item.id,
               patch: {
                 state: 'error',
+                progress: undefined,
                 error:
-                  item.kind === 'pdf'
-                    ? 'No readable text found. The PDF may be a scanned image.'
+                  item.kind === 'image' || item.kind === 'pdf'
+                    ? 'No readable text was found, even with text recognition.'
                     : 'The file does not contain any text.',
               },
             });
             return;
           }
-          dispatch({ type: 'updateDoc', id: item.id, patch: { state: 'ready', text, docxFormat: res.docxFormat } });
+          dispatch({
+            type: 'updateDoc',
+            id: item.id,
+            patch: {
+              state: 'ready',
+              progress: undefined,
+              text,
+              paraRanges: paragraphRanges(res.paragraphs),
+              docxFormat: res.docxFormat,
+              pages: res.pages,
+              blocks: res.blocks,
+              tables: res.tables,
+              figures: res.figures,
+              ocrConfidence: res.ocrConfidence,
+              skippedPages: res.skippedPages,
+            },
+          });
         })
         .catch((err: unknown) => {
           dispatch({
             type: 'updateDoc',
             id: item.id,
-            patch: { state: 'error', error: err instanceof Error ? err.message : 'The file could not be read.' },
+            patch: { state: 'error', progress: undefined, error: err instanceof Error ? err.message : 'The file could not be read.' },
           });
         });
     });
@@ -91,7 +135,7 @@ export function Upload() {
       <section className="card">
         <h2>Upload submissions</h2>
         <p className="muted-text">
-          Accepted formats: .docx, .pdf and .txt. Files are read in your browser and are never sent to a server. Mark source
+          Accepted formats: {ACCEPTED_LABEL}. Files are read in your browser and are never sent to a server. Scanned PDFs and images are read with text recognition (OCR). Mark source
           texts you want to compare against as <strong>Reference files</strong>.
         </p>
 
@@ -135,8 +179,12 @@ export function Upload() {
           <div className="alert alert-bad" role="alert">
             <strong>
               {rejected.length} file{rejected.length === 1 ? ' was' : 's were'} not added.
-            </strong>{' '}
-            Only .docx, .pdf and .txt files are supported: {rejected.join(', ')}.
+            </strong>
+            <ul className="alert-list">
+              {rejected.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ul>
           </div>
         )}
       </section>
@@ -176,16 +224,24 @@ export function Upload() {
                 <tr key={d.id}>
                   <td>
                     <div className="file-cell">
-                      <span className={`file-badge file-${d.kind}`} aria-hidden="true">
-                        {d.kind.toUpperCase()}
-                      </span>
-                      <div>
-                        <div className="strong">{d.fileName}</div>
+                      {d.kind === 'image' && d.sourceUrl ? (
+                        <img className="file-thumb" src={d.sourceUrl} alt="" />
+                      ) : (
+                        <span className={`file-badge file-${d.kind}`} aria-hidden="true">
+                          {d.kind === 'image' ? 'IMG' : d.kind.toUpperCase()}
+                        </span>
+                      )}
+                      <div className="file-info">
+                        <div className="strong file-name">{d.fileName}</div>
                         <div className="small file-status">
                           {d.state === 'reading' ? (
-                            <>
-                              <span className="spinner" aria-hidden="true" /> Reading…
-                            </>
+                            <span className="file-progress" role="status">
+                              <span className="spinner" aria-hidden="true" />
+                              <span>{d.progress?.label ?? 'Reading…'}</span>
+                              <span className="progress-bar" aria-hidden="true">
+                                <span style={{ width: `${Math.round((d.progress?.value ?? 0) * 100)}%` }} />
+                              </span>
+                            </span>
                           ) : d.state === 'error' ? (
                             <span className="text-bad">
                               <Icon name="alert" size={14} /> {d.error}
@@ -193,6 +249,10 @@ export function Upload() {
                           ) : (
                             <span className="text-ok">
                               <Icon name="check" size={14} /> Ready · {d.text.split(/\s+/).filter(Boolean).length} words
+                              {d.pages && d.kind === 'pdf' ? ` · ${d.pages.length} page${d.pages.length === 1 ? '' : 's'}` : ''}
+                              {d.tables?.length ? ` · ${d.tables.length} table${d.tables.length === 1 ? '' : 's'}` : ''}
+                              {d.figures?.length ? ` · ${d.figures.length} figure${d.figures.length === 1 ? '' : 's'}` : ''}
+                              {d.pages?.some((p) => p.ocr) ? ' · OCR' : ''}
                             </span>
                           )}
                         </div>

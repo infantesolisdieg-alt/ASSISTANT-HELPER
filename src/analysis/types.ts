@@ -9,7 +9,7 @@ export interface CheckResult {
   detail: string;
   /** Ejemplos concretos (oraciones, fragmentos) para mostrar al expandir la revisión. */
   instances?: string[];
-  group: 'format' | 'writing' | 'custom';
+  group: 'format' | 'writing' | 'figures' | 'custom';
 }
 
 export type SimilarityStatus = 'clear' | 'review' | 'high';

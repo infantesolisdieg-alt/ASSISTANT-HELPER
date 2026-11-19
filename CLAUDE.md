@@ -47,13 +47,14 @@ orientativos). Interfaz 100 % en inglés; comentarios del código en español.
   desactivan con prefers-reduced-motion. Sin librerías de gráficas.
 - Colores de estado para gráficas validados con el validador de dataviz:
   ok #2F7D4C, warn #B0760C, bad #A3283A, neutral #A8999B; siempre acompañados de texto.
+- **v1.3 (2026-11-18): documentos tal cual.** El usuario pidió analizar PDF e imágenes "sin pasarlos a texto" y analizar tablas y gráficos. Se hizo: vista "Original" (páginas del PDF con pdf.js, imagen, Word renderizado con tablas/imágenes/gráficas) con resaltados encima usando posiciones de texto (`src/extract/layout.ts`); OCR con tesseract.js (descarga los datos del idioma desde CDN, la imagen no se sube; máx. 15 páginas escaneadas); tablas, imágenes y gráficas nativas de Word (`src/extract/chart.ts`) y revisión de títulos "Table N"/"Figure N" (`src/analysis/figures.ts`). Límite honesto: sin IA en servidor no se interpreta el significado de una gráfica.
 - Avisar a la Product Owner: la bienvenida no es un login real y las animaciones son discretas.
 
 ## Estructura
 
 ```
 src/analysis/   lógica de análisis (una función por tipo) + pruebas *.test.ts
-src/extract/    lectura de .docx (jszip), .pdf (pdfjs-dist, carga diferida), .txt
+src/extract/    lectura de .docx (jszip, con tablas/imágenes/gráficas), .pdf (pdfjs-dist + OCR), imágenes (OCR), .txt
 src/report/     reporte PDF con jspdf (buildReport / exportReport)
 src/components/ pantallas: Welcome, Dashboard, Upload, Review, Plagiarism, AiIndicators,
                 SettingsScreen; piezas: charts, icons, Insights, CountUp, common (Modal…)
@@ -64,7 +65,7 @@ src/samples.ts       5 entregas de ejemplo (dos cartas comparten párrafos; el m
 
 ## Comandos
 
-- `npm run dev` (http://localhost:5173), `npm test` (Vitest, 36 pruebas), `npm run build`.
+- `npm run dev` (http://localhost:5173), `npm test` (Vitest, 47 pruebas), `npm run build`.
 - En PowerShell de Claude, Node y Git se instalaron con winget en esta máquina; si un comando
   no los encuentra, refrescar el PATH:
   `$env:Path = [Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [Environment]::GetEnvironmentVariable("Path","User")`

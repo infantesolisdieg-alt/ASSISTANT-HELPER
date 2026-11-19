@@ -175,11 +175,15 @@ export function runFormatChecks(input: FormatInput, settings: Settings): CheckRe
     let outcome: CheckResult['outcome'] = 'passed';
     if (words < minWords) outcome = words >= minWords * 0.9 ? 'review' : 'failed';
     if (words > maxWords) outcome = words <= maxWords * 1.1 ? 'review' : 'failed';
+    // Un rango inválido en Settings no debe reprobar a nadie
+    const badRange = minWords > maxWords;
     out.push({
       id: 'wordCount',
       name: 'Word count',
-      outcome,
-      detail: `${words} words (expected ${minWords}–${maxWords}).`,
+      outcome: badRange ? 'review' : outcome,
+      detail: badRange
+        ? `${words} words. The word range in Settings is not valid (minimum ${minWords} is greater than maximum ${maxWords}).`
+        : `${words} words (expected ${minWords}–${maxWords}).`,
       group: 'format',
     });
   }

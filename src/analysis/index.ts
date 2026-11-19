@@ -4,6 +4,7 @@ import type { Settings } from '../settings';
 import type { DocItem } from '../types';
 import { analyzeAi, type AiResult } from './ai';
 import { runCustomRules } from './customRules';
+import { runFigureChecks } from './figures';
 import { runFormatChecks } from './format';
 import { computeSimilarity, similarityStatus, type SimilarPair, type SimilarityResult } from './similarity';
 import { countWords } from './text';
@@ -34,6 +35,9 @@ export function analyzeAll(docs: DocItem[], settings: Settings): SessionAnalysis
     const checks = [
       ...runFormatChecks({ kind: d.kind, text: d.text, docxFormat: d.docxFormat }, settings),
       ...runWritingChecks(d.text, settings),
+      ...(settings.checks.tablesFigures
+        ? runFigureChecks({ kind: d.kind, text: d.text, tables: d.tables, figures: d.figures })
+        : []),
       ...runCustomRules(d.text, settings.customRules),
     ];
     byId.set(d.id, {
