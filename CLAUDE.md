@@ -7,8 +7,8 @@ oral en español e inglés"). Metodología Scrum. **Entrega v1.0: 2 de diciembre
 - **Scrum Master:** Diego Infante Solis (quien trabaja conmigo; hablarle en español)
 - **Repositorio:** https://github.com/infantesolisdieg-alt/ASSISTANT-HELPER (rama `main`)
 - **Despliegue:** Vercel, importado desde GitHub → cada `git push` a `main` publica solo.
-  Panel: https://vercel.com/xt-0a1e/assistant-helper. La dirección `assistant-helper-xt-0a1e.vercel.app` existe pero estaba protegida con "Vercel Authentication" (pide login de Vercel); hay que desactivar Deployment Protection o usar el dominio público de producción. `assistant-helper.vercel.app` NO es nuestro (404).
-- **Firebase:** proyecto `assistant-helper-6a777` (plan Spark). Google sign-in habilitado, Firestore (Standard, nam5, producción) con las reglas de `firestore.rules`. Dominios autorizados: localhost, firebaseapp.com, web.app y `assistant-helper-xt-0a1e.vercel.app`. Si Vercel da otro dominio público, agregarlo en Authentication → Configuración → Dominios autorizados.
+  **Sitio público: https://assistant-helper-pi.vercel.app** (panel: https://vercel.com/xt-0a1e/assistant-helper). Deployment Protection (Vercel Authentication) se desactivó el 2026-11-19 para que los profesores entren sin cuenta de Vercel. `assistant-helper.vercel.app` NO es nuestro (404).
+- **Firebase:** proyecto `assistant-helper-6a777` (plan Spark). Google sign-in habilitado, Firestore (Standard, nam5, producción) con las reglas de `firestore.rules`. Dominios autorizados: localhost, firebaseapp.com, web.app, `assistant-helper-pi.vercel.app` y `assistant-helper-xt-0a1e.vercel.app`. Si Vercel da otro dominio público, agregarlo en Authentication → Configuración → Dominios autorizados.
 
 ## Qué es
 
@@ -85,6 +85,6 @@ src/samples.ts       5 entregas de ejemplo (dos cartas comparten párrafos; el m
 
 ## Pendientes conocidos
 
-- Confirmar el dominio público de Vercel (y quitar la protección de despliegue) y probar el login con Google en el sitio publicado.
+- Probar el login con Google en https://assistant-helper-pi.vercel.app con un clic del usuario (el panel del navegador bloquea las ventanas emergentes que abre Claude).
 - Probar con trabajos reales de alumnos hechos en Word/PDF (solo se probó con archivos generados).
 - Probar a mano el botón "Export report" (descarga un PDF) y ver las animaciones en pantalla.
