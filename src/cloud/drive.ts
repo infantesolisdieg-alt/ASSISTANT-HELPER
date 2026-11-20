@@ -6,14 +6,11 @@
 import { ACCEPTED_LABEL, MAX_FILE_MB } from '../extract';
 import { firebaseConfig } from './config';
 
-/** ID de cliente web de OAuth (creado por Firebase en el proyecto assistant-helper-6a777). */
-const GOOGLE_CLIENT_ID =
-  import.meta.env.VITE_GOOGLE_CLIENT_ID || '648698892557-8t5f8gkh1fug1nih4snj5m6o49b60gm8.apps.googleusercontent.com';
 /** Número del proyecto de Google Cloud (lo pide el selector). */
 const GOOGLE_APP_ID = firebaseConfig.messagingSenderId;
 const SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
-export const driveEnabled = Boolean(GOOGLE_CLIENT_ID && firebaseConfig.apiKey && import.meta.env.MODE !== 'test');
+export const driveEnabled = Boolean(firebaseConfig.apiKey && firebaseConfig.authDomain && import.meta.env.MODE !== 'test');
 
 /** Tipos que se pueden elegir en Drive. Los Google Docs se convierten a Word (.docx). */
 const GOOGLE_DOC = 'application/vnd.google-apps.document';
@@ -62,7 +59,7 @@ async function loadPicker(): Promise<void> {
 /** Carga los scripts de Google con anticipación (al abrir la pantalla Upload). */
 export function preloadDrive(): void {
   if (!driveEnabled) return;
-  loadScript('https://accounts.google.com/gsi/client').catch(() => undefined);
+  getDriveAuth().catch(() => undefined);
   loadPicker().catch(() => undefined);
 }
 
@@ -72,31 +69,50 @@ export function preloadDrive(): void {
 
 let token: { value: string; expires: number } | null = null;
 
+// El permiso de Drive se pide con el inicio de sesión de Firebase (ya autorizado en todos los dominios
+// del sitio). Se usa una instancia aparte de Firebase, en memoria, para no tocar la sesión principal.
+type AuthMod = typeof import('firebase/auth');
+let driveAuth: Promise<{ auth: import('firebase/auth').Auth; mod: AuthMod }> | null = null;
+
+function getDriveAuth() {
+  if (!driveAuth) {
+    driveAuth = (async () => {
+      const [{ initializeApp, getApps }, mod] = await Promise.all([import('firebase/app'), import('firebase/auth')]);
+      const app = getApps().find((a) => a.name === 'drive') ?? initializeApp(firebaseConfig, 'drive');
+      const auth = mod.initializeAuth(app, {
+        persistence: mod.inMemoryPersistence,
+        popupRedirectResolver: mod.browserPopupRedirectResolver,
+      });
+      return { auth, mod };
+    })();
+    driveAuth.catch(() => {
+      driveAuth = null;
+    });
+  }
+  return driveAuth;
+}
+
 async function getToken(hint?: string): Promise<string> {
   if (token && token.expires > Date.now() + 60_000) return token.value;
-  await loadScript('https://accounts.google.com/gsi/client');
-  return new Promise<string>((resolve, reject) => {
-    const client = window.google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID,
-      scope: SCOPE,
-      hint,
-      callback: (resp: { access_token?: string; expires_in?: number; error?: string }) => {
-        if (resp.error || !resp.access_token) {
-          reject(new Error(resp.error === 'access_denied' ? 'Access to Google Drive was not allowed.' : 'Google Drive sign-in failed.'));
-          return;
-        }
-        token = { value: resp.access_token, expires: Date.now() + (resp.expires_in ?? 3600) * 1000 };
-        resolve(resp.access_token);
-      },
-      error_callback: (err: { type?: string }) => {
-        if (err?.type === 'popup_closed') reject(new DriveCancelled());
-        else if (err?.type === 'popup_failed_to_open')
-          reject(new Error('The browser blocked the Google window. Allow pop-ups for this site and try again.'));
-        else reject(new Error('Google Drive sign-in failed.'));
-      },
-    });
-    client.requestAccessToken({ prompt: token ? '' : 'consent' });
-  });
+  const { auth, mod } = await getDriveAuth();
+  const provider = new mod.GoogleAuthProvider();
+  provider.addScope(SCOPE);
+  provider.setCustomParameters(hint ? { login_hint: hint } : { prompt: 'select_account' });
+  try {
+    const result = await mod.signInWithPopup(auth, provider);
+    const accessToken = mod.GoogleAuthProvider.credentialFromResult(result)?.accessToken;
+    if (!accessToken) throw new Error('Google Drive sign-in failed.');
+    // Los tokens de Google duran 1 hora; se renuevan un poco antes
+    token = { value: accessToken, expires: Date.now() + 55 * 60 * 1000 };
+    mod.signOut(auth).catch(() => undefined);
+    return accessToken;
+  } catch (e) {
+    const code = (e as { code?: string })?.code ?? '';
+    if (code.includes('popup-closed') || code.includes('cancelled-popup')) throw new DriveCancelled();
+    if (code.includes('popup-blocked')) throw new Error('The browser blocked the Google window. Allow pop-ups for this site and try again.');
+    if (code.includes('unauthorized-domain')) throw new Error('This website is not authorized for Google sign-in yet.');
+    throw e instanceof Error ? e : new Error('Google Drive sign-in failed.');
+  }
 }
 
 /** El profesor cerró la ventana sin elegir nada: no es un error. */
