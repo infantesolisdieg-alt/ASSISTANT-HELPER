@@ -2834,3 +2834,21 @@ mark.search-hit {
 .submissions-card .student-cell .strong {
   white-space: nowrap;
 }
+
+/* ---------- Subir desde Google Drive ---------- */
+.source-buttons {
+  margin-top: 4px;
+}
+.drive-button {
+  gap: 10px;
+  border-color: #c6c6c6;
+  color: #1f1f1f;
+  background: #fff;
+}
+.drive-button:hover:not(:disabled) {
+  background: #f7f7f7;
+  border-color: #9e9e9e;
+}
+.drive-note {
+  margin: 6px 0 0;
+}

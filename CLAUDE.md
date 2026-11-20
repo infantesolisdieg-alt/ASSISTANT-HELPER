@@ -50,6 +50,7 @@ orientativos). Interfaz 100 % en inglés; comentarios del código en español.
 - **v1.3 (2026-11-18): documentos tal cual.** El usuario pidió analizar PDF e imágenes "sin pasarlos a texto" y analizar tablas y gráficos. Se hizo: vista "Original" (páginas del PDF con pdf.js, imagen, Word renderizado con tablas/imágenes/gráficas) con resaltados encima usando posiciones de texto (`src/extract/layout.ts`); OCR con tesseract.js (descarga los datos del idioma desde CDN, la imagen no se sube; máx. 15 páginas escaneadas); tablas, imágenes y gráficas nativas de Word (`src/extract/chart.ts`) y revisión de títulos "Table N"/"Figure N" (`src/analysis/figures.ts`). Límite honesto: sin IA en servidor no se interpreta el significado de una gráfica.
 - **v1.4 (2026-11-19): cuenta de Google y nube.** El usuario pidió una nube gratis "que no cobre después", inicio de sesión con Google y guardar la información de cada usuario (esto cambia las reglas originales de "sin servidor / sin cuentas / no guardar"; lo decidió el Scrum Master). Se eligió **Firebase plan Spark** (sin tarjeta, no cobra; Storage ya no es gratis, así que NO se suben los archivos originales, solo texto y resultados). Proyecto: `assistant-helper-6a777`. Código en `src/cloud/` (config, cloud, serialize, CloudSync) y `firestore.rules`. Sin config, la app sigue en modo local.
 - **Grupos y búsqueda (v1.4):** campo `group` por documento, pestañas/secciones por grupo en Submissions (`SubmissionsList.tsx`), búsqueda sin acentos con atajo "/" (`SearchBox.tsx`).
+- **Google Drive (v1.5, 2026-11-19):** botón "From Google Drive" en Upload (`src/cloud/drive.ts`): Google Identity Services (token con permiso `drive.file`) + Google Picker; descarga con Drive API v3 y exporta Google Docs a .docx. Configurado en Google Cloud (se aceptaron los Términos con permiso del usuario; NO se activó la prueba de pago de $300): Picker API y Drive API habilitadas, la clave del navegador permite Picker API (26 APIs), y el cliente web OAuth `648698892557-8t5f8gkh1fug1nih4snj5m6o49b60gm8` tiene como orígenes los dominios de Vercel y `http://localhost:5173`. Pantalla de permisos: En producción, usuarios externos.
 - Avisar a la Product Owner: la bienvenida no es un login real y las animaciones son discretas.
 
 ## Estructura
@@ -67,7 +68,7 @@ src/samples.ts       5 entregas de ejemplo (dos cartas comparten párrafos; el m
 
 ## Comandos
 
-- `npm run dev` (http://localhost:5173), `npm test` (Vitest, 52 pruebas), `npm run build`.
+- `npm run dev` (http://localhost:5173), `npm test` (Vitest, 54 pruebas), `npm run build`.
 - En PowerShell de Claude, Node y Git se instalaron con winget en esta máquina; si un comando
   no los encuentra, refrescar el PATH:
   `$env:Path = [Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [Environment]::GetEnvironmentVariable("Path","User")`

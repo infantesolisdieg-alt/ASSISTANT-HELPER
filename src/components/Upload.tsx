@@ -1,10 +1,11 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ACCEPTED_EXTENSIONS, ACCEPTED_LABEL, MAX_FILE_MB, extractFile, fileKind, needsSourceUrl } from '../extract';
 import { paragraphRanges } from '../extract/types';
 import { newId, useStore } from '../state/store';
 import { cleanGroup, groupsOf, type DocItem } from '../types';
 import { Icon } from './icons';
 import { matchesSearch, SearchBox } from './SearchBox';
+import { driveEnabled } from '../cloud/drive';
 
 function baseName(fileName: string): string {
   return fileName.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').trim();
@@ -30,9 +31,33 @@ export function Upload() {
   };
   const analyzedRefs = state.docs.filter((d) => d.analyzed && d.isReference);
 
-  const addFiles = (files: FileList | File[]) => {
+  const [driveStatus, setDriveStatus] = useState('');
+  const [driveBusy, setDriveBusy] = useState(false);
+
+  // Se precargan los scripts de Google para que la ventana de permiso abra al instante (si no, el navegador la bloquea)
+  useEffect(() => {
+    if (driveEnabled) import('../cloud/drive').then((m) => m.preloadDrive()).catch(() => undefined);
+  }, []);
+
+  const fromDrive = async () => {
+    setDriveBusy(true);
+    try {
+      const { pickFromDrive } = await import('../cloud/drive');
+      const { files, problems } = await pickFromDrive(setDriveStatus, state.profile?.email);
+      addFiles(files, problems);
+      if (files.length) notify(`${files.length} file${files.length === 1 ? '' : 's'} added from Google Drive.`);
+    } catch (e) {
+      const { DriveCancelled } = await import('../cloud/drive');
+      if (!(e instanceof DriveCancelled)) setRejected([e instanceof Error ? e.message : 'Google Drive could not be opened.']);
+    } finally {
+      setDriveBusy(false);
+      setDriveStatus('');
+    }
+  };
+
+  const addFiles = (files: FileList | File[], extraProblems: string[] = []) => {
     const list = Array.from(files);
-    const problems: string[] = [];
+    const problems: string[] = [...extraProblems];
     const good: File[] = [];
     for (const f of list) {
       if (!fileKind(f.name)) problems.push(`${f.name}: only ${ACCEPTED_LABEL} are supported.`);
@@ -174,9 +199,33 @@ export function Upload() {
           </span>
           <p className="dropzone-title">Drag and drop files here</p>
           <p className="muted-text">or</p>
-          <button type="button" className="button button-primary" onClick={() => inputRef.current?.click()}>
-            Select files
-          </button>
+          <div className="button-row center source-buttons">
+            <button type="button" className="button button-primary" onClick={() => inputRef.current?.click()}>
+              <Icon name="upload" size={16} /> From this computer
+            </button>
+            {driveEnabled && (
+              <button type="button" className="button button-secondary drive-button" onClick={fromDrive} disabled={driveBusy}>
+                {driveBusy ? (
+                  <span className="spinner" aria-hidden="true" />
+                ) : (
+                  <svg width="18" height="16" viewBox="0 0 87.3 78" aria-hidden="true">
+                    <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da" />
+                    <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47" />
+                    <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335" />
+                    <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d" />
+                    <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc" />
+                    <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00" />
+                  </svg>
+                )}
+                {driveBusy ? driveStatus || 'Waiting for Google Drive…' : 'From Google Drive'}
+              </button>
+            )}
+          </div>
+          {driveEnabled && (
+            <p className="small muted-text drive-note">
+              Google Drive only shares the files you choose. Google Docs are converted to Word automatically.
+            </p>
+          )}
           <input
             ref={inputRef}
             type="file"
