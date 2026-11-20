@@ -23,6 +23,8 @@ export function CloudSync() {
   const knownAccount = useRef('');
   const trackedUid = useRef<string | undefined>(undefined);
   const prime = useRef(false);
+  // false si la cuenta es nueva: su perfil todavía no existe en la nube y hay que crearlo
+  const accountExists = useRef(true);
   const serialCache = useRef(new WeakMap<DocItem, string>());
   const busy = useRef(false);
   const again = useRef(false);
@@ -60,6 +62,7 @@ export function CloudSync() {
             };
             createdAt.current = new Map(submissions.map((s) => [s.id, s.rec.createdAt ?? Date.now()]));
             prime.current = true;
+            accountExists.current = !!account;
             dispatch({
               type: 'hydrate',
               profile,
@@ -68,6 +71,7 @@ export function CloudSync() {
             });
             if (submissions.length) dispatch({ type: 'toast', message: `Welcome back! ${submissions.length} saved submission(s) loaded.` });
           } catch (e) {
+            console.error('Assistant Helper: cloud load failed', e);
             // Sin conexión: la docente puede trabajar y se reintenta el guardado después
             dispatch({
               type: 'hydrate',
@@ -119,8 +123,9 @@ export function CloudSync() {
       // Recién cargado desde la nube: no hay nada que subir
       prime.current = false;
       known.current = new Map(docs.map((d) => [d.id, serialize(d)]));
-      knownAccount.current = accountJson;
-      return;
+      // Cuenta nueva: el perfil se guarda enseguida para que exista en la nube
+      knownAccount.current = accountExists.current ? accountJson : '';
+      if (accountExists.current) return;
     }
 
     const timer = window.setTimeout(async () => {
@@ -156,6 +161,7 @@ export function CloudSync() {
           dispatch({ type: 'cloudStatus', status: { state: 'saved', savedAt: Date.now() } });
         }
       } catch (e) {
+        console.error('Assistant Helper: cloud save failed', e);
         const cloud = await import('./cloud');
         dispatch({ type: 'cloudStatus', status: { state: 'error', message: cloud.friendlyError(e) } });
       } finally {
