@@ -136,25 +136,46 @@ export interface PickedFile {
 function pick(accessToken: string): Promise<PickedFile[]> {
   return new Promise((resolve, reject) => {
     const g = window.google.picker;
-    const docs = new g.DocsView(g.ViewId.DOCS).setMimeTypes(MIME_TYPES.join(',')).setIncludeFolders(true).setSelectFolderEnabled(false);
+    const mimes = MIME_TYPES.join(',');
+    // Algunas versiones del selector no tienen setLabel: se usa solo si existe
+    const label = (view: any, text: string) => (typeof view.setLabel === 'function' ? view.setLabel(text) : view);
+
+    const myDrive = label(
+      new g.DocsView(g.ViewId.DOCS).setMimeTypes(mimes).setIncludeFolders(true).setSelectFolderEnabled(false).setParent('root'),
+      'My Drive',
+    );
+    const shared = label(new g.DocsView(g.ViewId.DOCS).setMimeTypes(mimes).setOwnedByMe(false), 'Shared with me');
+    const recent = label(new g.DocsView(g.ViewId.DOCS).setMimeTypes(mimes), 'All files');
+    const drives = label(
+      new g.DocsView(g.ViewId.DOCS).setMimeTypes(mimes).setEnableDrives(true).setIncludeFolders(true).setSelectFolderEnabled(false),
+      'Shared drives',
+    );
+    const upload = label(new g.DocsUploadView().setIncludeFolders(true), 'Upload to Drive');
+
     const picker = new g.PickerBuilder()
-      .addView(docs)
-      .addView(new g.DocsUploadView())
+      .addView(myDrive)
+      .addView(recent)
+      .addView(shared)
+      .addView(drives)
+      .addView(upload)
       .enableFeature(g.Feature.MULTISELECT_ENABLED)
+      .enableFeature(g.Feature.SUPPORT_DRIVES)
+      .setSelectableMimeTypes(mimes)
+      .setMaxItems(MAX_PICK)
       .setOAuthToken(accessToken)
       .setDeveloperKey(firebaseConfig.apiKey)
       .setAppId(GOOGLE_APP_ID)
-      .setTitle('Choose student submissions')
+      .setTitle('Choose student submissions (up to ' + MAX_PICK + ' files)')
       .setLocale('en')
       .setCallback((data: any) => {
         const action = data[g.Response.ACTION];
         if (action === g.Action.PICKED) {
           resolve(
-            (data[g.Response.DOCUMENTS] as any[]).map((d) => ({
-              id: d[g.Document.ID],
-              name: d[g.Document.NAME],
-              mimeType: d[g.Document.MIME_TYPE],
-              sizeBytes: Number(d.sizeBytes ?? 0),
+            (data[g.Response.DOCUMENTS] as any[]).map((doc) => ({
+              id: doc[g.Document.ID],
+              name: doc[g.Document.NAME],
+              mimeType: doc[g.Document.MIME_TYPE],
+              sizeBytes: Number(doc.sizeBytes ?? 0),
             })),
           );
         } else if (action === g.Action.CANCEL) {
@@ -166,58 +187,81 @@ function pick(accessToken: string): Promise<PickedFile[]> {
   });
 }
 
-/** Nombre con la extensión correcta (los Google Docs se descargan como .docx). */
-export function downloadName(f: PickedFile): string {
-  if (f.mimeType === GOOGLE_DOC) return /\.docx$/i.test(f.name) ? f.name : `${f.name}.docx`;
-  return f.name;
-}
+/** Máximo de archivos por selección (para no saturar el navegador). */
+export const MAX_PICK = 30;
 
-async function download(f: PickedFile, accessToken: string): Promise<File> {
-  const base = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(f.id)}`;
-  const url = f.mimeType === GOOGLE_DOC ? `${base}/export?mimeType=${encodeURIComponent(DOCX)}` : `${base}?alt=media`;
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
-  if (!res.ok) {
-    if (res.status === 401) token = null;
-    throw new Error(`${f.name}: could not be downloaded from Google Drive (error ${res.status}).`);
-  }
-  const blob = await res.blob();
-  const name = downloadName(f);
-  return new File([blob], name, { type: f.mimeType === GOOGLE_DOC ? DOCX : blob.type || f.mimeType });
-}
+const EXT_BY_MIME: Record<string, string> = {
+  [DOCX]: '.docx',
+  [GOOGLE_DOC]: '.docx',
+  'application/pdf': '.pdf',
+  'text/plain': '.txt',
+  'image/png': '.png',
+  'image/jpeg': '.jpg',
+  'image/webp': '.webp',
+};
 
 /**
- * Abre el selector de Google Drive y devuelve los archivos elegidos ya descargados.
- * Los que no se pueden usar (tipo no soportado, muy grandes, error de descarga) se informan en `problems`.
+ * Nombre con la extensión correcta según el tipo real del archivo: los Google Docs se descargan
+ * como .docx, y a los archivos de Drive sin extensión ("Ensayo", "IMG_2041") se les agrega.
  */
-export async function pickFromDrive(
-  onProgress?: (label: string) => void,
-  hint?: string,
-): Promise<{ files: File[]; problems: string[] }> {
+export function downloadName(f: PickedFile): string {
+  const ext = EXT_BY_MIME[f.mimeType];
+  if (!ext) return f.name;
+  if (f.mimeType === GOOGLE_DOC) return /.docx$/i.test(f.name) ? f.name : f.name + ext;
+  const lower = f.name.toLowerCase();
+  const ok = ext === '.jpg' ? /.(jpe?g)$/.test(lower) : lower.endsWith(ext);
+  return ok ? f.name : f.name + ext;
+}
+
+/** Revisa un archivo elegido antes de descargarlo. Devuelve el motivo si no se puede usar. */
+export function driveProblem(f: PickedFile): string | null {
+  if (!MIME_TYPES.includes(f.mimeType)) return f.name + ': only ' + ACCEPTED_LABEL + ' and Google Docs are supported.';
+  if (f.sizeBytes > MAX_FILE_MB * 1024 * 1024) return f.name + ': the file is larger than ' + MAX_FILE_MB + ' MB.';
+  return null;
+}
+
+/** Abre el selector de Google Drive (pide el permiso la primera vez) y devuelve lo que se eligió. */
+export async function chooseFromDrive(hint?: string): Promise<{ picked: PickedFile[]; token: string }> {
   if (!driveEnabled) throw new Error('Google Drive is not configured for this site.');
-  onProgress?.('Opening Google Drive…');
   const [accessToken] = await Promise.all([getToken(hint), loadPicker()]);
-  onProgress?.('');
   const picked = await pick(accessToken);
-  const files: File[] = [];
-  const problems: string[] = [];
-  let i = 0;
-  for (const f of picked) {
-    i++;
-    if (!MIME_TYPES.includes(f.mimeType)) {
-      problems.push(`${f.name}: only ${ACCEPTED_LABEL} and Google Docs are supported.`);
-      continue;
-    }
-    if (f.sizeBytes > MAX_FILE_MB * 1024 * 1024) {
-      problems.push(`${f.name}: the file is larger than ${MAX_FILE_MB} MB.`);
-      continue;
-    }
-    onProgress?.(`Downloading ${i} of ${picked.length} from Google Drive…`);
-    try {
-      files.push(await download(f, accessToken));
-    } catch (e) {
-      problems.push(e instanceof Error ? e.message : `${f.name}: could not be downloaded.`);
-    }
+  return { picked, token: accessToken };
+}
+
+/** Descarga un archivo de Drive al navegador, avisando el avance (0 a 1) cuando se conoce el tamaño. */
+export async function downloadDriveFile(f: PickedFile, accessToken: string, onProgress?: (p: number) => void): Promise<File> {
+  const base = 'https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(f.id);
+  const url = f.mimeType === GOOGLE_DOC ? base + '/export?mimeType=' + encodeURIComponent(DOCX) : base + '?alt=media&supportsAllDrives=true';
+  let res: Response;
+  try {
+    res = await fetch(url, { headers: { Authorization: 'Bearer ' + accessToken } });
+  } catch {
+    throw new Error('No internet connection while downloading from Google Drive.');
   }
-  onProgress?.('');
-  return { files, problems };
+  if (!res.ok) {
+    if (res.status === 401) {
+      token = null;
+      throw new Error('The Google Drive permission expired. Choose the file again.');
+    }
+    if (res.status === 403 && f.mimeType === GOOGLE_DOC) throw new Error('This Google Doc is too large to convert to Word (Google limit: 10 MB).');
+    throw new Error('Could not be downloaded from Google Drive (error ' + res.status + ').');
+  }
+  const total = Number(res.headers.get('content-length')) || f.sizeBytes || 0;
+  let blob: Blob;
+  if (res.body && total > 0 && onProgress) {
+    const reader = res.body.getReader();
+    const chunks: BlobPart[] = [];
+    let received = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      received += value.length;
+      onProgress(Math.min(1, received / total));
+    }
+    blob = new Blob(chunks);
+  } else {
+    blob = await res.blob();
+  }
+  return new File([blob], downloadName(f), { type: f.mimeType === GOOGLE_DOC ? DOCX : f.mimeType });
 }

@@ -15,6 +15,8 @@ export function Upload() {
   const { state, dispatch, submissions, go, notify, hasDoc } = useStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  // Contador de dragenter/dragleave: evita el parpadeo al pasar sobre el texto y los botones
+  const dragDepth = useRef(0);
   const [rejected, setRejected] = useState<string[]>([]);
   const [query, setQuery] = useState('');
   // Grupo que se asigna a los archivos nuevos (por defecto, el del perfil)
@@ -42,8 +44,35 @@ export function Upload() {
   const fromDrive = async () => {
     setDriveBusy(true);
     try {
-      const { pickFromDrive } = await import('../cloud/drive');
-      const { files, problems } = await pickFromDrive(setDriveStatus, state.profile?.email);
+      const drive = await import('../cloud/drive');
+      setDriveStatus('Opening Google Drive…');
+      const { picked, token } = await drive.chooseFromDrive(state.profile?.email);
+      const problems: string[] = [];
+      const files: File[] = [];
+      let i = 0;
+      for (const f of picked) {
+        i++;
+        const why = drive.driveProblem(f);
+        if (why) {
+          problems.push(why);
+          continue;
+        }
+        // Repetidos: se detectan antes de descargar
+        const name = drive.downloadName(f);
+        if (state.docs.some((d) => d.fileName === name && (!f.sizeBytes || d.fileSize === f.sizeBytes))) {
+          problems.push(`${name}: this file is already loaded.`);
+          continue;
+        }
+        try {
+          files.push(
+            await drive.downloadDriveFile(f, token, (p) =>
+              setDriveStatus(`Downloading ${i} of ${picked.length} (${Math.round(p * 100)}%)…`),
+            ),
+          );
+        } catch (err) {
+          problems.push(`${name}: ${err instanceof Error ? err.message : 'could not be downloaded.'}`);
+        }
+      }
       addFiles(files, problems);
       if (files.length) notify(`${files.length} file${files.length === 1 ? '' : 's'} added from Google Drive.`);
     } catch (e) {
@@ -183,13 +212,19 @@ export function Upload() {
 
         <div
           className={`dropzone${dragging ? ' dragging' : ''}`}
-          onDragOver={(e) => {
+          onDragEnter={(e) => {
             e.preventDefault();
+            dragDepth.current += 1;
             setDragging(true);
           }}
-          onDragLeave={() => setDragging(false)}
+          onDragOver={(e) => e.preventDefault()}
+          onDragLeave={() => {
+            dragDepth.current = Math.max(0, dragDepth.current - 1);
+            if (dragDepth.current === 0) setDragging(false);
+          }}
           onDrop={(e) => {
             e.preventDefault();
+            dragDepth.current = 0;
             setDragging(false);
             addFiles(e.dataTransfer.files);
           }}
