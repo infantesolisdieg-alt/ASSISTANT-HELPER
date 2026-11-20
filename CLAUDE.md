@@ -67,7 +67,7 @@ src/samples.ts       5 entregas de ejemplo (dos cartas comparten párrafos; el m
 
 ## Comandos
 
-- `npm run dev` (http://localhost:5173), `npm test` (Vitest, 51 pruebas), `npm run build`.
+- `npm run dev` (http://localhost:5173), `npm test` (Vitest, 52 pruebas), `npm run build`.
 - En PowerShell de Claude, Node y Git se instalaron con winget en esta máquina; si un comando
   no los encuentra, refrescar el PATH:
   `$env:Path = [Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [Environment]::GetEnvironmentVariable("Path","User")`
@@ -85,6 +85,6 @@ src/samples.ts       5 entregas de ejemplo (dos cartas comparten párrafos; el m
 
 ## Pendientes conocidos
 
-- Probar el login con Google en https://assistant-helper-pi.vercel.app con un clic del usuario (el panel del navegador bloquea las ventanas emergentes que abre Claude).
+- (Hecho 2026-11-19) Login con Google y guardado en Firestore verificados en el sitio publicado: users/{uid} con perfil, configuración y submissions. Nota: el panel del navegador de Claude bloquea las ventanas emergentes que abre Claude y, si es angosto (< 1024 px), la app muestra el aviso de solo computadora.
 - Probar con trabajos reales de alumnos hechos en Word/PDF (solo se probó con archivos generados).
 - Probar a mano el botón "Export report" (descarga un PDF) y ver las animaciones en pantalla.
