@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { ACCEPTED_EXTENSIONS, ACCEPTED_LABEL, MAX_FILE_MB, extractFile, fileKind, needsSourceUrl } from '../extract';
 import { paragraphRanges } from '../extract/types';
 import { newId, useStore } from '../state/store';
-import type { DocItem } from '../types';
+import { cleanGroup, groupsOf, type DocItem } from '../types';
 import { Icon } from './icons';
+import { matchesSearch, SearchBox } from './SearchBox';
 
 function baseName(fileName: string): string {
   return fileName.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').trim();
@@ -14,8 +15,19 @@ export function Upload() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [rejected, setRejected] = useState<string[]>([]);
+  const [query, setQuery] = useState('');
+  // Grupo que se asigna a los archivos nuevos (por defecto, el del perfil)
+  const [bulkGroup, setBulkGroup] = useState(state.profile?.group ?? '');
 
   const staged = state.docs.filter((d) => !d.analyzed);
+  const knownGroups = useMemo(() => groupsOf(state.docs), [state.docs]);
+  const visible = staged.filter((d) => matchesSearch(query, [d.fileName, d.studentName, d.group, d.assignmentTitle]));
+
+  const applyGroupToAll = () => {
+    const g = cleanGroup(bulkGroup);
+    staged.filter((d) => !d.isReference).forEach((d) => dispatch({ type: 'updateDoc', id: d.id, patch: { group: g } }));
+    notify(g ? `Group “${g}” applied to ${staged.filter((d) => !d.isReference).length} file(s).` : 'Group removed from all files.');
+  };
   const analyzedRefs = state.docs.filter((d) => d.analyzed && d.isReference);
 
   const addFiles = (files: FileList | File[]) => {
@@ -39,6 +51,7 @@ export function Upload() {
         fileSize: f.size,
         kind,
         studentName: '',
+        group: cleanGroup(bulkGroup),
         assignmentTitle: baseName(f.name),
         isReference: false,
         text: '',
@@ -135,7 +148,11 @@ export function Upload() {
       <section className="card">
         <h2>Upload submissions</h2>
         <p className="muted-text">
-          Accepted formats: {ACCEPTED_LABEL}. Files are read in your browser and are never sent to a server. Scanned PDFs and images are read with text recognition (OCR). Mark source
+          Accepted formats: {ACCEPTED_LABEL}. Files are read in your browser.{' '}
+          {state.profile?.uid
+            ? 'When you press Analyze, the text and results are saved to your Google account (the original files are not uploaded).'
+            : 'Nothing is sent to a server.'}{' '}
+          Scanned PDFs and images are read with text recognition (OCR). Mark source
           texts you want to compare against as <strong>Reference files</strong>.
         </p>
 
@@ -194,13 +211,49 @@ export function Upload() {
           <div>
             <h2>Files to analyze</h2>
             <p className="muted-text small">
-              Check the student name and assignment title for each file. Reference files are used only for comparison.
+              Check the student name, group and assignment title for each file. Reference files are used only for comparison.
             </p>
           </div>
           <button type="button" className="button button-primary" disabled={!canAnalyze} onClick={analyze}>
             Analyze
           </button>
         </div>
+
+        {staged.length > 0 && (
+          <div className="list-toolbar">
+            <SearchBox
+              id="upload-search"
+              value={query}
+              onChange={setQuery}
+              label="Search files"
+              placeholder="Search by file, student or group…"
+            />
+            <div className="bulk-group">
+              <label className="field-label" htmlFor="bulk-group">
+                Group for all files
+              </label>
+              <div className="inline-fields">
+                <input
+                  id="bulk-group"
+                  className="input"
+                  list="group-options"
+                  value={bulkGroup}
+                  placeholder="e.g. 5A"
+                  onChange={(e) => setBulkGroup(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && applyGroupToAll()}
+                />
+                <button type="button" className="button button-secondary" onClick={applyGroupToAll}>
+                  Apply to all
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        <datalist id="group-options">
+          {knownGroups.map((g) => (
+            <option key={g} value={g} />
+          ))}
+        </datalist>
 
         {staged.length === 0 ? (
           <p className="empty-inline">
@@ -212,6 +265,7 @@ export function Upload() {
               <tr>
                 <th scope="col">File</th>
                 <th scope="col">Student name</th>
+                <th scope="col">Group</th>
                 <th scope="col">Assignment title</th>
                 <th scope="col">Reference file</th>
                 <th scope="col">
@@ -220,7 +274,14 @@ export function Upload() {
               </tr>
             </thead>
             <tbody>
-              {staged.map((d) => (
+              {visible.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="empty-inline">
+                    No files match “{query}”.
+                  </td>
+                </tr>
+              )}
+              {visible.map((d) => (
                 <tr key={d.id}>
                   <td>
                     <div className="file-cell">
@@ -267,6 +328,21 @@ export function Upload() {
                       value={d.studentName}
                       disabled={d.isReference || d.state === 'error'}
                       onChange={(e) => dispatch({ type: 'updateDoc', id: d.id, patch: { studentName: e.target.value } })}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      className="input input-group"
+                      list="group-options"
+                      aria-label={`Group for ${d.fileName}`}
+                      placeholder={d.isReference ? '—' : 'e.g. 5A'}
+                      value={d.group}
+                      disabled={d.isReference || d.state === 'error'}
+                      onChange={(e) => dispatch({ type: 'updateDoc', id: d.id, patch: { group: e.target.value } })}
+                      onBlur={(e) => {
+                        const g = cleanGroup(e.target.value);
+                        if (g !== d.group) dispatch({ type: 'updateDoc', id: d.id, patch: { group: g } });
+                      }}
                     />
                   </td>
                   <td>

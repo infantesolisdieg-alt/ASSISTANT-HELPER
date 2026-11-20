@@ -18,6 +18,8 @@ expresión oral en español e inglés"*. Metodología Scrum.
 | Bienvenida del profesor | Al abrir la app, el profesor escribe su nombre, materia y grupo (sin contraseña ni servidor). Aparece en la barra lateral, el saludo y el reporte PDF. "Change teacher" termina la sesión y deja todo limpio para el siguiente profesor. |
 | Dashboard visual | Tarjetas con contadores animados, "Highlights" con hallazgos automáticos (par más parecido, IA elevada, problema de formato más común, pendientes), dona de progreso, barras de similitud con la línea del umbral y aviso de "Session complete" al terminar. |
 | Revisión ágil | Botones anterior/siguiente ("Submission 2 of 5"); al señalar un documento coincidente se resaltan sus pasajes en el visor y con un clic se salta a ellos. |
+| Cuenta de Google y nube | Inicio de sesión con Google y guardado automático en Firebase (plan Spark gratuito: sin tarjeta, no cobra; si se rebasa el límite diario, el guardado se detiene hasta el día siguiente). Se guardan el texto, los resultados, las notas, las decisiones, los grupos, el perfil y la configuración de cada profesor; los archivos originales no se suben. Sin Firebase configurado, la app funciona como antes (sin cuenta). |
+| Grupos y búsqueda | Grupo por archivo (con "Apply to all"), pestañas y secciones por grupo en Submissions, búsqueda sin acentos con atajo "/", y orden por alumno, similitud, IA o pendientes. |
 | Carga de documentos | Arrastrar y soltar o seleccionar archivos `.docx`, `.pdf`, `.txt` e imágenes (`.png`, `.jpg`, `.webp`), con barra de progreso, límite de 30 MB y aviso de archivos repetidos. Nombre del alumno, título de la tarea y opción de marcar archivos de referencia. |
 | Documentos tal cual | Vista "Original": las páginas reales del PDF, la imagen y el Word con sus tablas, imágenes y gráficas, con los resaltados dibujados encima. Vista "Text" con el texto extraído. |
 | OCR en el navegador | Los PDF escaneados y las imágenes se leen con tesseract.js dentro del navegador (la imagen nunca se sube; solo se descargan una vez los datos del idioma inglés). Máximo 15 páginas escaneadas por PDF. |
@@ -72,6 +74,25 @@ Después abrir <http://localhost:5173>. En la bienvenida se puede escribir cualq
 | `npm test` | Ejecuta las pruebas de `src/analysis`, `src/extract` y `src/report` (Vitest). |
 | `npm run build` | Revisa los tipos (TypeScript) y genera la versión de producción en `dist/`. |
 | `npm run preview` | Sirve localmente la versión generada en `dist/`. |
+
+## Conectar la nube (Firebase, gratis)
+
+1. En <https://console.firebase.google.com> crear un proyecto (plan **Spark**, gratuito, no pide tarjeta).
+2. **Authentication → Sign-in method → Google → Enable**.
+3. **Authentication → Settings → Authorized domains**: agregar el dominio de Vercel (por ejemplo `assistant-helper.vercel.app`).
+4. **Firestore Database → Create database** (modo producción) y en **Rules** pegar el contenido de `firestore.rules`.
+5. **Project settings → Your apps → Web (</>)**: registrar la app y copiar la configuración.
+6. Poner los valores en un archivo `.env.local` (y en **Vercel → Settings → Environment Variables**):
+
+   ```
+   VITE_FIREBASE_API_KEY=...
+   VITE_FIREBASE_AUTH_DOMAIN=...
+   VITE_FIREBASE_PROJECT_ID=...
+   VITE_FIREBASE_APP_ID=...
+   VITE_FIREBASE_MESSAGING_SENDER_ID=...
+   ```
+
+   Estos valores no son secretos (Firebase los diseña para el navegador); la seguridad la dan las reglas de Firestore.
 
 ## Desplegar en Vercel (plan Hobby, gratuito)
 

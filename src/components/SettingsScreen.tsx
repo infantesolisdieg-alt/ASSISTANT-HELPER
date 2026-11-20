@@ -68,6 +68,47 @@ function NumberField({
   );
 }
 
+/** Datos del profesor: se muestran en la barra lateral y en los reportes (y se guardan en la cuenta). */
+function ProfileCard() {
+  const { state, dispatch } = useStore();
+  const p = state.profile!;
+  const field = (key: 'name' | 'role' | 'group', label: string, placeholder: string) => (
+    <div className="field">
+      <label className="field-label" htmlFor={`profile-${key}`}>
+        {label}
+      </label>
+      <input
+        id={`profile-${key}`}
+        key={`${p.uid ?? 'local'}-${key}`}
+        className="input"
+        defaultValue={p[key]}
+        placeholder={placeholder}
+        onBlur={(e) => {
+          const v = e.target.value.replace(/s+/g, ' ').trim();
+          if (key === 'name' && !v) {
+            e.target.value = p.name;
+            return;
+          }
+          if (v !== p[key]) dispatch({ type: 'updateProfile', patch: { [key]: v } });
+        }}
+      />
+    </div>
+  );
+  return (
+    <section className="card">
+      <h2>Your profile</h2>
+      <p className="muted-text small">
+        {p.uid ? `Signed in with Google as ${p.email}. Changes are saved to your account.` : 'Used in the sidebar and in exported reports during this session.'}
+      </p>
+      <div className="form-grid">
+        {field('name', 'Full name', 'Your name')}
+        {field('role', 'Role or subject', 'e.g. Teacher · Bilingual Executive Secretary')}
+        {field('group', 'Default group for new files', 'e.g. 5A')}
+      </div>
+    </section>
+  );
+}
+
 const FONTS = ['Times New Roman', 'Arial', 'Calibri', 'Cambria', 'Georgia', 'Garamond', 'Verdana', 'Aptos'];
 
 export function SettingsScreen() {
@@ -112,6 +153,7 @@ export function SettingsScreen() {
 
   return (
     <div className="page settings-page">
+      {state.profile && <ProfileCard />}
       <section className="card">
         <div className="card-header">
           <div>

@@ -4,11 +4,12 @@ import type { SimilarityStatus } from '../analysis/types';
 import { SAMPLE_SUBMISSIONS } from '../samples';
 import { docLabel, newId, nextPending, useStore } from '../state/store';
 import { firstName, type DocItem } from '../types';
-import { Donut, ProgressSegments, SimilarityBars, type DonutSegment, type Tone } from './charts';
-import { AiBadge, EmptyState, ReviewBadge, SimilarityBadge, kindLabel, percentText } from './common';
+import { Donut, SimilarityBars, type DonutSegment, type Tone } from './charts';
+import { EmptyState } from './common';
 import { CountUp } from './CountUp';
 import { Icon, type IconName } from './icons';
 import { Insights } from './Insights';
+import { SubmissionsList } from './SubmissionsList';
 import { STATUS_LABEL, STATUS_TONE } from './tones';
 
 function greeting(): string {
@@ -36,7 +37,6 @@ function StatCard({ icon, value, label, tone }: { icon: IconName; value: number;
 
 export function Dashboard() {
   const { state, dispatch, submissions, analysis, docById, go, notify } = useStore();
-  const references = state.docs.filter((d) => d.analyzed && d.isReference).length;
   const staged = state.docs.filter((d) => !d.analyzed).length;
   const profile = state.profile!;
 
@@ -46,6 +46,7 @@ export function Dashboard() {
       fileName: s.fileName,
       kind: 'txt',
       studentName: s.studentName,
+      group: s.group,
       assignmentTitle: s.assignmentTitle,
       isReference: false,
       text: s.text,
@@ -218,93 +219,7 @@ export function Dashboard() {
             </div>
           </section>
 
-          <section className="card">
-            <div className="card-header">
-              <div>
-                <h2>Submissions</h2>
-                <p className="muted-text small">
-                  Similarity threshold: {threshold}%
-                  {references > 0 && ` · ${references} reference file${references === 1 ? '' : 's'}`}
-                </p>
-              </div>
-              <div className="progress-wrap">
-                <span className="small muted-text">
-                  {reviewed}/{submissions.length} reviewed
-                </span>
-                <ProgressSegments segments={progress} />
-              </div>
-            </div>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th scope="col">Student</th>
-                  <th scope="col">Assignment</th>
-                  <th scope="col">Type</th>
-                  <th scope="col">Similarity</th>
-                  <th scope="col">AI indicators</th>
-                  <th scope="col">Review</th>
-                  <th scope="col">
-                    <span className="sr-only">Actions</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {submissions.map((d) => {
-                  const a = analysis.byId.get(d.id);
-                  return (
-                    <tr key={d.id} className="row-link" onClick={() => go('review', d.id)}>
-                      <td>
-                        <span className="student-cell">
-                          <span className="mini-avatar" aria-hidden="true">
-                            {d.studentName.charAt(0).toUpperCase()}
-                          </span>
-                          <span className="strong">{d.studentName}</span>
-                        </span>
-                      </td>
-                      <td>{d.assignmentTitle}</td>
-                      <td>
-                        <span className="file-chip">{kindLabel(d.kind)}</span>
-                      </td>
-                      <td>
-                        {a && (
-                          <span className="cell-flex">
-                            <span className="num">{percentText(a.similarity.percent)}</span>
-                            <SimilarityBadge status={a.status} />
-                          </span>
-                        )}
-                      </td>
-                      <td>
-                        {a?.ai ? (
-                          <span className="cell-flex">
-                            <span className="num">{a.ai.percent}%</span>
-                            <AiBadge level={a.ai.level} />
-                          </span>
-                        ) : (
-                          <span className="muted-text">Off</span>
-                        )}
-                      </td>
-                      <td>
-                        <ReviewBadge status={d.reviewStatus} />
-                      </td>
-                      <td className="right">
-                        <button
-                          type="button"
-                          className="button button-link"
-                          aria-label={`Open review for ${d.studentName}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            go('review', d.id);
-                          }}
-                        >
-                          Open
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </section>
+          <SubmissionsList />
         </>
       )}
     </div>

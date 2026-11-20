@@ -49,6 +49,7 @@ export function Plagiarism() {
           <thead>
             <tr>
               <th scope="col">Student</th>
+              <th scope="col">Group</th>
               <th scope="col">Assignment</th>
               <th scope="col">Similarity</th>
               <th scope="col">Status</th>
@@ -64,6 +65,7 @@ export function Plagiarism() {
               return (
                 <tr key={d.id}>
                   <td className="strong">{d.studentName}</td>
+                  <td>{d.group ? <span className="group-chip">{d.group}</span> : <span className="muted-text">—</span>}</td>
                   <td>{d.assignmentTitle}</td>
                   <td>
                     <span className="cell-flex">

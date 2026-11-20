@@ -9,6 +9,7 @@ import { Toast } from './components/Toast';
 import { Topbar } from './components/Topbar';
 import { Upload } from './components/Upload';
 import { Welcome } from './components/Welcome';
+import { CloudSync } from './cloud/CloudSync';
 import { StoreProvider, useStore } from './state/store';
 
 function CurrentView() {
@@ -31,6 +32,16 @@ function CurrentView() {
 
 function Shell() {
   const { state, go } = useStore();
+  if (state.auth === 'checking' || state.cloud.state === 'loading') {
+    return (
+      <div className="app app-welcome">
+        <div className="splash" role="status">
+          <img src="/logo-mark.svg" alt="" width="72" height="72" className="splash-logo" />
+          <p>{state.auth === 'checking' ? 'Checking your account…' : 'Loading your saved work…'}</p>
+        </div>
+      </div>
+    );
+  }
   if (!state.profile) {
     return (
       <div className="app app-welcome">
@@ -67,6 +78,7 @@ export default function App() {
           <p>Assistant Helper is available on desktop computers only.</p>
         </div>
       </div>
+      <CloudSync />
       <Shell />
     </StoreProvider>
   );

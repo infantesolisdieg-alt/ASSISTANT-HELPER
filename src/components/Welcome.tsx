@@ -1,7 +1,8 @@
-// Pantalla de bienvenida: el profesor indica quién revisa en esta sesión.
-// No hay contraseña ni servidor: el perfil vive en memoria y se borra al cerrar la pestaña.
+// Pantalla de bienvenida. Con Firebase configurado: "Continue with Google" (el trabajo se guarda en la
+// cuenta). Siempre está la opción sin cuenta: el perfil vive en memoria y se borra al cerrar la pestaña.
 
 import { useState, type FormEvent } from 'react';
+import { cloudEnabled } from '../cloud/config';
 import { useStore } from '../state/store';
 import { DEMO_PROFILE } from '../types';
 import { Icon, type IconName } from './icons';
@@ -18,6 +19,28 @@ export function Welcome() {
   const [role, setRole] = useState('');
   const [group, setGroup] = useState('');
   const [touched, setTouched] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
+  const [showLocal, setShowLocal] = useState(!cloudEnabled);
+
+  const google = async () => {
+    setGoogleBusy(true);
+    setGoogleError(null);
+    try {
+      const cloud = await import('../cloud/cloud');
+      try {
+        await cloud.signInWithGoogle();
+        // CloudSync detecta la sesión y carga la cuenta
+      } catch (e) {
+        const msg = cloud.friendlyError(e);
+        if (msg) setGoogleError(msg);
+      }
+    } catch {
+      setGoogleError('The sign-in service could not be loaded. Check your internet connection.');
+    } finally {
+      setGoogleBusy(false);
+    }
+  };
 
   const nameError = touched && !name.trim();
 
@@ -57,14 +80,52 @@ export function Welcome() {
           ))}
         </ul>
         <p className="welcome-privacy">
-          <Icon name="shield" size={16} /> Everything runs in this browser tab. Nothing is stored on a server.
+          <Icon name="shield" size={16} />{' '}
+          {cloudEnabled
+            ? 'Files are read in your browser. With Google, only the text and your results are saved to your private account.'
+            : 'Everything runs in this browser tab. Nothing is stored on a server.'}
         </p>
       </section>
 
       <section className="welcome-panel">
         <form className="welcome-form card" onSubmit={submit} noValidate>
           <h2>Welcome</h2>
-          <p className="muted-text">Tell us who is reviewing in this session. No password is needed.</p>
+          {cloudEnabled && (
+            <>
+              <p className="muted-text">Sign in to keep your submissions, groups and reviews saved between sessions.</p>
+              <button type="button" className="button google-button full" onClick={google} disabled={googleBusy}>
+                {googleBusy ? (
+                  <span className="spinner" aria-hidden="true" />
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+                    <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.5 30.2 0 24 0 14.6 0 6.6 5.4 2.6 13.3l7.8 6C12.3 13.6 17.6 9.5 24 9.5z" />
+                    <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17.5z" />
+                    <path fill="#FBBC05" d="M10.4 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.3.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.6 10.7l7.8-6z" />
+                    <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.4 0-11.7-4.1-13.6-9.8l-7.8 6C6.6 42.6 14.6 48 24 48z" />
+                  </svg>
+                )}
+                {googleBusy ? 'Opening Google…' : 'Continue with Google'}
+              </button>
+              {googleError && (
+                <p className="form-hint text-bad" role="alert">
+                  {googleError}
+                </p>
+              )}
+              <div className="divider">
+                <span>or</span>
+              </div>
+              {!showLocal && (
+                <button type="button" className="button button-secondary full" onClick={() => setShowLocal(true)}>
+                  Use without an account
+                </button>
+              )}
+            </>
+          )}
+          {showLocal && (
+            <>
+          <p className="muted-text">
+            {cloudEnabled ? 'Without an account nothing is saved: everything is removed when you close the tab.' : 'Tell us who is reviewing in this session. No password is needed.'}
+          </p>
 
           <label className="field-label" htmlFor="teacher-name">
             Full name <span className="required">(required)</span>
@@ -119,6 +180,8 @@ export function Welcome() {
             Continue with the demo profile ({DEMO_PROFILE.name})
           </button>
           <p className="form-hint">Your name is only used in this tab and is removed when you close it.</p>
+            </>
+          )}
         </form>
       </section>
     </div>

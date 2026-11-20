@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { docLabel, nextPending, useStore } from '../state/store';
-import type { ReviewStatus } from '../types';
+import { cleanGroup, groupsOf, type ReviewStatus } from '../types';
 import { AiBadge, EmptyState, Modal, OutcomeBadge, ReviewBadge, SimilarityBadge, kindLabel, percentText } from './common';
 import { DocumentViewer, type Highlight } from './DocumentViewer';
 import { Icon } from './icons';
@@ -96,7 +96,7 @@ export function Review() {
           >
             {submissions.map((d) => (
               <option key={d.id} value={d.id}>
-                {d.studentName} — {d.assignmentTitle} ({d.reviewStatus === 'pending' ? 'pending' : 'reviewed'})
+                {d.studentName}{d.group ? ` (${d.group})` : ''} — {d.assignmentTitle} · {d.reviewStatus === 'pending' ? 'pending' : 'reviewed'}
               </option>
             ))}
           </select>
@@ -110,9 +110,37 @@ export function Review() {
             <Icon name="arrow" size={18} />
           </button>
           </div>
-          <p className="small muted-text review-meta">
-            {doc.fileName} · {kindLabel(doc.kind)} · {a.wordCount} words · <ReviewBadge status={doc.reviewStatus} />
-          </p>
+          <div className="small muted-text review-meta">
+            <label className="group-edit">
+              <span>Group</span>
+              <input
+                key={doc.id}
+                className="input input-inline"
+                list="review-groups"
+                defaultValue={doc.group}
+                placeholder="Add group"
+                aria-label={`Group for ${doc.studentName}`}
+                onBlur={(e) => {
+                  const g = cleanGroup(e.target.value);
+                  e.target.value = g;
+                  if (g !== doc.group) {
+                    dispatch({ type: 'updateDoc', id: doc.id, patch: { group: g } });
+                    notify(g ? `${doc.studentName} moved to ${g}.` : `Group removed for ${doc.studentName}.`);
+                  }
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+              />
+              <datalist id="review-groups">
+                {groupsOf(submissions).map((g) => (
+                  <option key={g} value={g} />
+                ))}
+              </datalist>
+            </label>
+            <span>
+              {doc.fileName} · {kindLabel(doc.kind)} · {a.wordCount} words
+            </span>
+            <ReviewBadge status={doc.reviewStatus} />
+          </div>
         </div>
         <div className="button-row">
           <button type="button" className="button button-secondary" onClick={exportReport} disabled={exporting}>

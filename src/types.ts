@@ -7,6 +7,10 @@ export interface TeacherProfile {
   name: string;
   role: string;
   group: string;
+  /** Solo con cuenta de Google. */
+  uid?: string;
+  email?: string;
+  photoURL?: string;
 }
 
 export const DEMO_PROFILE: TeacherProfile = {
@@ -40,6 +44,8 @@ export interface DocItem {
   kind: FileKind;
   fileSize?: number;
   studentName: string;
+  /** Grupo del alumno (por ejemplo "5A"). Vacío si no se indicó. */
+  group: string;
   assignmentTitle: string;
   isReference: boolean;
   /** Texto completo: párrafos separados por una línea en blanco. */
@@ -80,4 +86,22 @@ export function releaseDoc(d: DocItem): void {
     if (d.kind === 'pdf') import('./extract/pdf').then((m) => m.closePdf(d.sourceUrl!)).catch(() => undefined);
   }
   for (const f of d.figures ?? []) if (f.src) URL.revokeObjectURL(f.src);
+}
+
+export const NO_GROUP = 'No group';
+
+/** Nombre del grupo para mostrar (los vacíos se agrupan como "No group"). */
+export function groupLabel(group: string | undefined): string {
+  return group?.trim() || NO_GROUP;
+}
+
+/** Normaliza lo que escribe la docente: sin espacios extra ("  5 a " → "5 a"). */
+export function cleanGroup(group: string): string {
+  return group.replace(/\s+/g, ' ').trim();
+}
+
+/** Grupos distintos de una lista de documentos, en orden alfabético ("No group" al final). */
+export function groupsOf(docs: DocItem[]): string[] {
+  const set = new Set(docs.map((d) => cleanGroup(d.group ?? '')).filter(Boolean));
+  return [...set].sort((a, b) => a.localeCompare(b, 'en', { numeric: true, sensitivity: 'base' }));
 }

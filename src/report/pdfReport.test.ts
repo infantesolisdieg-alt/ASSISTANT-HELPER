@@ -13,6 +13,7 @@ describe('buildReport', () => {
       fileName: s.fileName,
       kind: 'txt',
       studentName: s.studentName,
+      group: s.group,
       assignmentTitle: s.assignmentTitle,
       isReference: false,
       text: s.text,

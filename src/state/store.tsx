@@ -1,10 +1,11 @@
-// Estado de la sesión: todo vive en memoria (useReducer). Al cerrar o recargar la pestaña
-// se pierde todo; no se usa localStorage ni ningún servidor.
+// Estado de la sesión (useReducer). En modo local todo vive en memoria y se pierde al cerrar la
+// pestaña. Con cuenta de Google, CloudSync guarda los trabajos analizados en Firestore.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react';
 import { analyzeAll, type SessionAnalysis } from '../analysis';
+import { cloudEnabled } from '../cloud/config';
 import { DEFAULT_SETTINGS, type Settings } from '../settings';
-import { releaseDoc, type DocItem, type Note, type ReviewStatus, type TeacherProfile } from '../types';
+import { cleanGroup, releaseDoc, type DocItem, type Note, type ReviewStatus, type TeacherProfile } from '../types';
 
 export type View = 'dashboard' | 'upload' | 'review' | 'plagiarism' | 'ai' | 'settings';
 
@@ -16,6 +17,17 @@ interface State {
   view: View;
   selectedId: string | null;
   toast: { id: number; message: string } | null;
+  /** 'checking' mientras Firebase revisa si hay una sesión de Google guardada. */
+  auth: 'checking' | 'ready';
+  cloud: CloudStatus;
+  /** Sube cada vez que la docente pide reintentar el guardado. */
+  cloudRetry: number;
+}
+
+export interface CloudStatus {
+  state: 'off' | 'loading' | 'saving' | 'saved' | 'error';
+  message?: string;
+  savedAt?: number;
 }
 
 type Action =
@@ -30,7 +42,12 @@ type Action =
   | { type: 'navigate'; view: View; selectedId?: string | null }
   | { type: 'toast'; message: string }
   | { type: 'signIn'; profile: TeacherProfile }
-  | { type: 'signOut' };
+  | { type: 'signOut' }
+  | { type: 'updateProfile'; patch: Partial<TeacherProfile> }
+  | { type: 'hydrate'; profile: TeacherProfile; settings: Settings | null; docs: DocItem[] }
+  | { type: 'authReady' }
+  | { type: 'cloudStatus'; status: CloudStatus }
+  | { type: 'cloudRetry' };
 
 const initialState: State = {
   profile: null,
@@ -39,6 +56,9 @@ const initialState: State = {
   view: 'dashboard',
   selectedId: null,
   toast: null,
+  auth: cloudEnabled ? 'checking' : 'ready',
+  cloud: { state: 'off' },
+  cloudRetry: 0,
 };
 
 function reducer(state: State, action: Action): State {
@@ -54,7 +74,20 @@ function reducer(state: State, action: Action): State {
         selectedId: state.selectedId === action.id ? null : state.selectedId,
       };
     case 'analyzeStaged':
-      return { ...state, docs: state.docs.map((d) => (d.state === 'ready' ? { ...d, analyzed: true } : d)) };
+      return {
+        ...state,
+        docs: state.docs.map((d) =>
+          d.state === 'ready' && !d.analyzed
+            ? {
+                ...d,
+                analyzed: true,
+                studentName: d.studentName.replace(/\s+/g, ' ').trim(),
+                group: d.isReference ? '' : cleanGroup(d.group ?? ''),
+                assignmentTitle: d.assignmentTitle.trim() || d.fileName,
+              }
+            : d,
+        ),
+      };
     case 'addNote':
       return {
         ...state,
@@ -71,12 +104,37 @@ function reducer(state: State, action: Action): State {
       };
     case 'clearAll':
       // La configuración de criterios y el perfil se conservan: no son archivos temporales.
-      return { ...initialState, profile: state.profile, settings: state.settings };
+      return {
+        ...initialState,
+        profile: state.profile,
+        settings: state.settings,
+        auth: state.auth,
+        cloud: state.cloud,
+        cloudRetry: state.cloudRetry,
+      };
     case 'signIn':
-      return { ...initialState, profile: action.profile };
+      return { ...initialState, auth: 'ready', profile: action.profile };
     case 'signOut':
-      // Cambiar de profesor termina la sesión completa: archivos, resultados y criterios.
-      return initialState;
+      // Cambiar de profesor termina la sesión local: archivos, resultados y criterios.
+      // (Con cuenta de Google, lo guardado sigue en la nube.)
+      return { ...initialState, auth: 'ready' };
+    case 'updateProfile':
+      return state.profile ? { ...state, profile: { ...state.profile, ...action.patch } } : state;
+    case 'hydrate':
+      return {
+        ...initialState,
+        auth: 'ready',
+        profile: action.profile,
+        settings: action.settings ?? DEFAULT_SETTINGS,
+        docs: action.docs,
+        cloud: { state: 'saved', savedAt: Date.now() },
+      };
+    case 'authReady':
+      return { ...state, auth: 'ready' };
+    case 'cloudStatus':
+      return { ...state, cloud: action.status };
+    case 'cloudRetry':
+      return { ...state, cloudRetry: state.cloudRetry + 1 };
     case 'setSettings':
       return { ...state, settings: action.settings };
     case 'navigate':

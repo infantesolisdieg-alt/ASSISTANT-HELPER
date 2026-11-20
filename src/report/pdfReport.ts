@@ -109,7 +109,7 @@ export function buildReport(
     }
   }
   text('Assistant Helper - Submission report', { size: 18, bold: true, color: RED, gap: 6 });
-  text(`Student: ${doc.studentName}`, { size: 11 });
+  text(`Student: ${doc.studentName}${doc.group ? `   Group: ${doc.group}` : ''}`, { size: 11 });
   text(`Assignment: ${doc.assignmentTitle}`, { size: 11 });
   text(`File: ${doc.fileName} (${a.wordCount} words)`, { size: 11 });
   if (reviewer) {

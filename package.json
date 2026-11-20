@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "firebase": "^11.0.2",
     "jspdf": "^3.0.1",
     "jszip": "^3.10.1",
     "pdfjs-dist": "^4.10.38",

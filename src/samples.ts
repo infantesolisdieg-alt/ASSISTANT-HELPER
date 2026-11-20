@@ -3,6 +3,7 @@
 
 export interface SampleSubmission {
   studentName: string;
+  group: string;
   assignmentTitle: string;
   fileName: string;
   text: string;
@@ -13,6 +14,7 @@ const p = (...paras: string[]) => paras.join('\n\n');
 export const SAMPLE_SUBMISSIONS: SampleSubmission[] = [
   {
     studentName: 'Valeria Gómez',
+    group: '5A',
     assignmentTitle: 'Business letter: quotation request',
     fileName: 'valeria_gomez_business_letter.txt',
     text: p(
@@ -31,6 +33,7 @@ export const SAMPLE_SUBMISSIONS: SampleSubmission[] = [
   },
   {
     studentName: 'Luis Hernández',
+    group: '5B',
     assignmentTitle: 'Business letter: quotation request',
     fileName: 'luis_hernandez_business_letter.txt',
     text: p(
@@ -49,6 +52,7 @@ export const SAMPLE_SUBMISSIONS: SampleSubmission[] = [
   },
   {
     studentName: 'Mariana López',
+    group: '5A',
     assignmentTitle: 'Formal email: day-off request',
     fileName: 'mariana_lopez_formal_email.txt',
     text: p(
@@ -64,6 +68,7 @@ export const SAMPLE_SUBMISSIONS: SampleSubmission[] = [
   },
   {
     studentName: 'Andrés Morales',
+    group: '5B',
     assignmentTitle: 'Internal memo: digital filing system',
     fileName: 'andres_morales_memo.txt',
     text: p(
@@ -79,6 +84,7 @@ export const SAMPLE_SUBMISSIONS: SampleSubmission[] = [
   },
   {
     studentName: 'Fernanda Cruz',
+    group: '5A',
     assignmentTitle: 'Meeting minutes: monthly administrative meeting',
     fileName: 'fernanda_cruz_meeting_minutes.txt',
     text: p(
