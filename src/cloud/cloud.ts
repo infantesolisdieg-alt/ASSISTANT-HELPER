@@ -102,6 +102,14 @@ export async function saveSubmission(uid: string, id: string, rec: CloudSubmissi
   await fs.setDoc(fs.doc(db, 'users', uid, 'submissions', id), { ...rec, updatedAt: Date.now() });
 }
 
+/** Borra todo lo guardado de la cuenta: los trabajos y el perfil con la configuración. */
+export async function deleteAccountData(uid: string): Promise<void> {
+  const { db, fs } = await init();
+  const subs = await fs.getDocs(fs.collection(db, 'users', uid, 'submissions'));
+  for (const d of subs.docs) await fs.deleteDoc(d.ref);
+  await fs.deleteDoc(fs.doc(db, 'users', uid));
+}
+
 export async function deleteSubmission(uid: string, id: string): Promise<void> {
   const { db, fs } = await init();
   await fs.deleteDoc(fs.doc(db, 'users', uid, 'submissions', id));

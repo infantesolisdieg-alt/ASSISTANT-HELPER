@@ -133,6 +133,55 @@ export interface PickedFile {
   sizeBytes: number;
 }
 
+/**
+ * El contenido del selector es de Google (un iframe) y no se puede cambiar. Lo que sí es nuestro:
+ * el marco y el fondo (styles.css, .picker-dialog) y este letrero de la app encima del selector.
+ */
+function showBanner(): { remove: () => void } {
+  const el = document.createElement('div');
+  el.className = 'picker-banner';
+  el.setAttribute('role', 'status');
+  el.innerHTML =
+    '<img src="/logo-mark.svg" alt="" width="28" height="28" />' +
+    '<span><strong>Assistant Helper</strong> · Choose the student files to analyze. ' +
+    'Only the files you select are shared with the app.</span>';
+  el.hidden = true;
+  document.body.appendChild(el);
+  let frame = 0;
+  let tries = 0;
+  // Se coloca justo arriba de la ventana de Google cuando aparece (si hay espacio)
+  const place = () => {
+    const dialog = document.querySelector<HTMLElement>('.picker-dialog');
+    const rect = dialog?.getBoundingClientRect();
+    if (rect && rect.width > 0) {
+      const room = rect.top;
+      if (room >= 52) {
+        el.style.left = rect.left + 'px';
+        el.style.width = rect.width + 'px';
+        el.style.top = Math.max(8, rect.top - 43) + 'px';
+        el.hidden = false;
+      } else {
+        el.hidden = true;
+      }
+    }
+    if (tries++ < 600) frame = requestAnimationFrame(place);
+  };
+  frame = requestAnimationFrame(place);
+  const onResize = () => {
+    tries = 0;
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(place);
+  };
+  window.addEventListener('resize', onResize);
+  return {
+    remove: () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', onResize);
+      el.remove();
+    },
+  };
+}
+
 function pick(accessToken: string): Promise<PickedFile[]> {
   return new Promise((resolve, reject) => {
     const g = window.google.picker;
@@ -140,50 +189,57 @@ function pick(accessToken: string): Promise<PickedFile[]> {
     // Algunas versiones del selector no tienen setLabel: se usa solo si existe
     const label = (view: any, text: string) => (typeof view.setLabel === 'function' ? view.setLabel(text) : view);
 
-    const myDrive = label(
-      new g.DocsView(g.ViewId.DOCS).setMimeTypes(mimes).setIncludeFolders(true).setSelectFolderEnabled(false).setParent('root'),
-      'My Drive',
-    );
-    const shared = label(new g.DocsView(g.ViewId.DOCS).setMimeTypes(mimes).setOwnedByMe(false), 'Shared with me');
-    const recent = label(new g.DocsView(g.ViewId.DOCS).setMimeTypes(mimes), 'All files');
-    const drives = label(
-      new g.DocsView(g.ViewId.DOCS).setMimeTypes(mimes).setEnableDrives(true).setIncludeFolders(true).setSelectFolderEnabled(false),
-      'Shared drives',
-    );
+    // Vista de lista (nombre, dueño, fecha): las miniaturas salen vacías con el permiso drive.file
+    const docs = () => new g.DocsView(g.ViewId.DOCS).setMimeTypes(mimes).setMode(g.DocsViewMode.LIST);
+    const myDrive = label(docs().setIncludeFolders(true).setSelectFolderEnabled(false).setParent('root'), 'My Drive');
+    const recent = label(docs(), 'All files');
+    const shared = label(docs().setOwnedByMe(false), 'Shared with me');
+    const starred = label(docs().setStarred(true), 'Starred');
+    const drives = label(docs().setEnableDrives(true).setIncludeFolders(true).setSelectFolderEnabled(false), 'Shared drives');
     const upload = label(new g.DocsUploadView().setIncludeFolders(true), 'Upload to Drive');
 
-    const picker = new g.PickerBuilder()
-      .addView(myDrive)
-      .addView(recent)
-      .addView(shared)
-      .addView(drives)
-      .addView(upload)
-      .enableFeature(g.Feature.MULTISELECT_ENABLED)
-      .enableFeature(g.Feature.SUPPORT_DRIVES)
-      .setSelectableMimeTypes(mimes)
-      .setMaxItems(MAX_PICK)
-      .setOAuthToken(accessToken)
-      .setDeveloperKey(firebaseConfig.apiKey)
-      .setAppId(GOOGLE_APP_ID)
-      .setTitle('Choose student submissions (up to ' + MAX_PICK + ' files)')
-      .setLocale('en')
-      .setCallback((data: any) => {
-        const action = data[g.Response.ACTION];
-        if (action === g.Action.PICKED) {
-          resolve(
-            (data[g.Response.DOCUMENTS] as any[]).map((doc) => ({
-              id: doc[g.Document.ID],
-              name: doc[g.Document.NAME],
-              mimeType: doc[g.Document.MIME_TYPE],
-              sizeBytes: Number(doc.sizeBytes ?? 0),
-            })),
-          );
-        } else if (action === g.Action.CANCEL) {
-          reject(new DriveCancelled());
-        }
-      })
-      .build();
-    picker.setVisible(true);
+    const banner = showBanner();
+    const done = () => banner.remove();
+
+    try {
+      const picker = new g.PickerBuilder()
+        .addView(myDrive)
+        .addView(recent)
+        .addView(shared)
+        .addView(starred)
+        .addView(drives)
+        .addView(upload)
+        .enableFeature(g.Feature.MULTISELECT_ENABLED)
+        .enableFeature(g.Feature.SUPPORT_DRIVES)
+        .setSelectableMimeTypes(mimes)
+        .setMaxItems(MAX_PICK)
+        .setOAuthToken(accessToken)
+        .setDeveloperKey(firebaseConfig.apiKey)
+        .setAppId(GOOGLE_APP_ID)
+        .setTitle('Select student work · up to ' + MAX_PICK + ' files')
+        .setLocale('en')
+        .setCallback((data: any) => {
+          const action = data[g.Response.ACTION];
+          if (action === g.Action.PICKED || action === g.Action.CANCEL) done();
+          if (action === g.Action.PICKED) {
+            resolve(
+              (data[g.Response.DOCUMENTS] as any[]).map((doc) => ({
+                id: doc[g.Document.ID],
+                name: doc[g.Document.NAME],
+                mimeType: doc[g.Document.MIME_TYPE],
+                sizeBytes: Number(doc.sizeBytes ?? 0),
+              })),
+            );
+          } else if (action === g.Action.CANCEL) {
+            reject(new DriveCancelled());
+          }
+        })
+        .build();
+      picker.setVisible(true);
+    } catch (e) {
+      done();
+      reject(e instanceof Error ? e : new Error('Google Drive could not be opened.'));
+    }
   });
 }
 
@@ -207,9 +263,9 @@ const EXT_BY_MIME: Record<string, string> = {
 export function downloadName(f: PickedFile): string {
   const ext = EXT_BY_MIME[f.mimeType];
   if (!ext) return f.name;
-  if (f.mimeType === GOOGLE_DOC) return /.docx$/i.test(f.name) ? f.name : f.name + ext;
+  if (f.mimeType === GOOGLE_DOC) return /\.docx$/i.test(f.name) ? f.name : f.name + ext;
   const lower = f.name.toLowerCase();
-  const ok = ext === '.jpg' ? /.(jpe?g)$/.test(lower) : lower.endsWith(ext);
+  const ok = ext === '.jpg' ? /\.(jpe?g)$/.test(lower) : lower.endsWith(ext);
   return ok ? f.name : f.name + ext;
 }
 

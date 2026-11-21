@@ -8,6 +8,7 @@ import { paragraphRanges } from '../extract/types';
 import { newId, useStore } from '../state/store';
 import { cleanGroup, groupsOf, type DocItem } from '../types';
 import { Icon } from './icons';
+import { TermsDialog } from './Terms';
 import { matchesSearch, SearchBox } from './SearchBox';
 
 function baseName(fileName: string): string {
@@ -58,7 +59,7 @@ function SourceCard({
   title: string;
   text: string;
   action: ReactNode;
-  note?: string;
+  note?: ReactNode;
 }) {
   return (
     <div className="source-card">
@@ -85,6 +86,7 @@ export function Upload() {
   const [bulkGroup, setBulkGroup] = useState(state.profile?.group ?? '');
   const [driveStatus, setDriveStatus] = useState('');
   const [driveBusy, setDriveBusy] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
   const docsRef = useRef(state.docs);
   docsRef.current = state.docs;
   // Filas recién agregadas que React todavía no dibuja: hasDoc aún no las conoce, pero siguen vivas
@@ -410,7 +412,14 @@ export function Upload() {
                     {driveBusy ? driveStatus || 'Waiting for Google Drive…' : 'Choose from Drive'}
                   </button>
                 }
-                note="Assistant Helper can only open the files you choose."
+                note={
+                  <>
+                    Assistant Helper can only open the files you choose.{' '}
+                    <button type="button" className="inline-link" onClick={() => setShowTerms(true)}>
+                      How Drive data is used
+                    </button>
+                  </>
+                }
               />
             )}
           </div>
@@ -673,6 +682,8 @@ export function Upload() {
           </button>
         </div>
       </section>
+
+      {showTerms && <TermsDialog section="drive" onClose={() => setShowTerms(false)} />}
 
       {analyzedRefs.length > 0 && (
         <section className="card">

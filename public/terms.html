@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en" translate="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="google" content="notranslate" />
+    <meta name="description" content="Terms of Use and Privacy Notice of Assistant Helper, including how it uses Google account and Google Drive data." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Source+Sans+3:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <title>Terms and Privacy · Assistant Helper</title>
+    <!-- Página pública de términos y privacidad. También se muestra dentro de la app (iframe). -->
+    <!-- Si cambia el contenido importante, subir TERMS_VERSION en src/terms.ts para volver a pedir la aceptación. -->
+    <style>
+      :root {
+        --red: #8b1e2d;
+        --red-dark: #4a0d16;
+        --red-light: #f6e7e9;
+        --bg: #fbf8f6;
+        --border: #e8dadc;
+        --text: #2a1a1c;
+        --text-2: #6b5558;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Source Sans 3', 'Segoe UI', Arial, sans-serif;
+        font-size: 16px;
+        line-height: 1.6;
+      }
+      header {
+        background: var(--red-dark);
+        color: #fff;
+        padding: 28px 16px;
+      }
+      header .wrap,
+      main {
+        max-width: 820px;
+        margin: 0 auto;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: 'Libre Baskerville', Georgia, serif;
+        font-size: 18px;
+      }
+      .brand img {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #fff;
+      }
+      h1 {
+        font-family: 'Libre Baskerville', Georgia, serif;
+        font-size: 28px;
+        line-height: 1.3;
+        margin: 14px 0 4px;
+      }
+      header p {
+        margin: 0;
+        color: #f3dfe2;
+      }
+      main {
+        padding: 24px 16px 56px;
+      }
+      nav.toc {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 14px 18px;
+        margin-bottom: 20px;
+      }
+      nav.toc strong {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--red-dark);
+      }
+      nav.toc ol {
+        margin: 0;
+        padding-left: 20px;
+        columns: 2;
+      }
+      section {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 6px 22px 14px;
+        margin-bottom: 16px;
+      }
+      h2 {
+        font-family: 'Libre Baskerville', Georgia, serif;
+        font-size: 20px;
+        color: var(--red-dark);
+        margin: 16px 0 8px;
+      }
+      h3 {
+        font-size: 16px;
+        margin: 14px 0 4px;
+        color: var(--red-dark);
+      }
+      a {
+        color: var(--red);
+        font-weight: 600;
+      }
+      a:focus-visible {
+        outline: 3px solid var(--red);
+        outline-offset: 2px;
+      }
+      ul {
+        padding-left: 20px;
+      }
+      li {
+        margin: 3px 0;
+      }
+      .summary {
+        background: var(--red-light);
+        border-color: #e6c1c6;
+      }
+      .summary ul {
+        margin-top: 4px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px;
+        margin: 8px 0 12px;
+      }
+      th,
+      td {
+        text-align: left;
+        vertical-align: top;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border);
+      }
+      th {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--text-2);
+      }
+      .note {
+        color: var(--text-2);
+        font-size: 14px;
+      }
+      footer {
+        text-align: center;
+        color: var(--text-2);
+        font-size: 14px;
+      }
+      @media (max-width: 640px) {
+        nav.toc ol {
+          columns: 1;
+        }
+        h1 {
+          font-size: 23px;
+        }
+        section {
+          padding: 4px 16px 12px;
+        }
+      }
+    </style>
+  </head>
+  <body class="notranslate">
+    <header>
+      <div class="wrap">
+        <div class="brand"><img src="/logo-mark.svg" alt="" /> Assistant Helper</div>
+        <h1>Terms of Use and Privacy Notice</h1>
+        <p>Effective date: November 20, 2026 · Version 2026-11-20</p>
+      </div>
+    </header>
+
+    <main>
+      <section class="summary" aria-labelledby="summary">
+        <h2 id="summary">In short</h2>
+        <ul>
+          <li>Assistant Helper is a free school project that helps teachers review students’ English writing.</li>
+          <li>Files are read <strong>inside your browser</strong>. The original files are never uploaded.</li>
+          <li>
+            With a Google account, only your profile, your settings and the <strong>text and results</strong> of the work you
+            analyze are saved to your private space in the cloud. Nobody else can see them.
+          </li>
+          <li>
+            Google Drive access is limited to the <strong>files you choose</strong> in Google’s file picker. The app cannot
+            see the rest of your Drive.
+          </li>
+          <li>We do not sell, share or use your data for advertising, and we do not use it to train AI models.</li>
+          <li>Results, especially the AI indicators, are advisory. The teacher always makes the final decision.</li>
+        </ul>
+      </section>
+
+      <nav class="toc" aria-label="Contents">
+        <strong>Contents</strong>
+        <ol>
+          <li><a href="#about">About the service</a></li>
+          <li><a href="#use">Acceptable use</a></li>
+          <li><a href="#results">Results and limitations</a></li>
+          <li><a href="#google">Google account data</a></li>
+          <li><a href="#drive">Google Drive access</a></li>
+          <li><a href="#storage">What is stored and where</a></li>
+          <li><a href="#sharing">Sharing and Limited Use</a></li>
+          <li><a href="#control">Your choices and deletion</a></li>
+          <li><a href="#students">Student information</a></li>
+          <li><a href="#changes">Changes and contact</a></li>
+        </ol>
+      </nav>
+
+      <section aria-labelledby="about">
+        <h2 id="about">1. About the service</h2>
+        <p>
+          Assistant Helper is a web application created by Team 7 (Equipo 7) as a school project for the Bilingual Executive
+          Secretary program. It checks similarity between submissions loaded in the same session, document format, writing
+          quality and heuristic AI indicators. It is offered free of charge, “as is”, without warranties of any kind, and it may
+          change or stop being available at any time.
+        </p>
+        <p>
+          By pressing <em>Continue with Google</em>, <em>Use without an account</em>, <em>Start session</em> or <em>I agree</em>
+          you confirm that you have read and accept these terms. If you do not agree, please do not use the application.
+        </p>
+      </section>
+
+      <section aria-labelledby="use">
+        <h2 id="use">2. Acceptable use</h2>
+        <ul>
+          <li>Use Assistant Helper only for teaching and reviewing schoolwork.</li>
+          <li>Only load documents you are allowed to review, such as work your students submitted to you.</li>
+          <li>Do not upload content that is illegal, or try to access other people’s accounts or data.</li>
+          <li>Do not try to break, overload or misuse the application or the services it relies on.</li>
+          <li>You are responsible for keeping your Google account secure and for the decisions you make with the results.</li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="results">
+        <h2 id="results">3. Results and limitations</h2>
+        <ul>
+          <li>Similarity is calculated only against the files loaded in your session. The application never searches the internet.</li>
+          <li>
+            AI indicators are statistical signals, not proof. They can be wrong, especially with short texts, and must never be the
+            only reason for a grade or a sanction.
+          </li>
+          <li>Text recognition (OCR) of scanned pages and images can make mistakes with handwriting or blurry photos.</li>
+          <li>Always review the original document before making a decision about a student.</li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="google">
+        <h2 id="google">4. Google account data</h2>
+        <p>Signing in with Google is optional. If you choose it, Assistant Helper receives from Google:</p>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Data</th>
+              <th scope="col">Why it is used</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Your name and profile photo</td>
+              <td>To greet you and show who is signed in. Your name also appears on the PDF reports you export.</td>
+            </tr>
+            <tr>
+              <td>Your email address</td>
+              <td>To identify your account and suggest the same account when you open Google Drive.</td>
+            </tr>
+            <tr>
+              <td>A unique account ID</td>
+              <td>To keep your saved work separate from everyone else’s.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          Sign-in is handled by Google through Firebase Authentication. Assistant Helper never sees or stores your Google
+          password.
+        </p>
+      </section>
+
+      <section aria-labelledby="drive">
+        <h2 id="drive">5. Google Drive access</h2>
+        <p>
+          When you press <em>Choose from Drive</em>, Google asks for permission to use the
+          <code>drive.file</code> scope. This permission only lets Assistant Helper open the files you select in Google’s
+          own file picker (and files you upload through it).
+        </p>
+        <ul>
+          <li>The application <strong>cannot</strong> list, read, change or delete any other file in your Drive.</li>
+          <li>
+            The selected files are downloaded directly from Google to your browser to be read and analyzed. They do not pass
+            through any server of ours.
+          </li>
+          <li>Google Docs are converted to Word format (.docx) by Google during the download.</li>
+          <li>
+            The access token is kept only in the memory of the open tab, expires after about one hour and is discarded when you
+            close the tab.
+          </li>
+          <li>The application never modifies, moves, shares or deletes your Drive files.</li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="storage">
+        <h2 id="storage">6. What is stored and where</h2>
+        <h3>Without an account</h3>
+        <p>Nothing is stored. Everything stays in the memory of the browser tab and is removed when you close or reload it.</p>
+        <h3>With a Google account</h3>
+        <p>
+          The following is saved in Google Cloud Firestore (Firebase), in a private space that only your account can read or
+          write:
+        </p>
+        <ul>
+          <li>Your profile (name, role, group) and your review settings.</li>
+          <li>
+            For each analyzed submission: file name, student name, group, assignment title, extracted text, analysis results,
+            notes, review decision and final comment.
+          </li>
+        </ul>
+        <p>
+          <strong>Never stored:</strong> the original files (Word, PDF or images), images inside documents, your Google password
+          and your Google Drive access token.
+        </p>
+        <p class="note">Firestore is operated by Google and protected with security rules and encrypted connections.</p>
+      </section>
+
+      <section aria-labelledby="sharing">
+        <h2 id="sharing">7. Sharing and Limited Use</h2>
+        <p>
+          Assistant Helper does not sell, rent or share your information or your students’ information with anyone. It does not
+          show advertising and does not use your data to train artificial intelligence models. No person on the project team
+          reads your saved data.
+        </p>
+        <p>
+          Assistant Helper’s use and transfer of information received from Google APIs adheres to the
+          <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer"
+            >Google API Services User Data Policy</a
+          >, including the Limited Use requirements.
+        </p>
+      </section>
+
+      <section aria-labelledby="control">
+        <h2 id="control">8. Your choices and deletion</h2>
+        <ul>
+          <li>Remove a submission from the list to delete it from your account.</li>
+          <li><em>Clear all submissions</em> (sidebar) deletes every saved submission and keeps your profile and settings.</li>
+          <li>
+            <em>Settings → Privacy and terms → Delete my saved data</em> deletes your profile, settings and all submissions from
+            the cloud and signs you out.
+          </li>
+          <li>
+            You can remove Assistant Helper’s access to your Google account and Drive at any time from
+            <a href="https://myaccount.google.com/connections" target="_blank" rel="noopener noreferrer"
+              >your Google account connections</a
+            >.
+          </li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="students">
+        <h2 id="students">9. Student information</h2>
+        <p>
+          Submissions can contain personal information about students. As the teacher, you decide what to load and you must
+          follow your school’s rules and the applicable data protection laws. Load only what is needed for the review and
+          delete it when it is no longer necessary.
+        </p>
+      </section>
+
+      <section aria-labelledby="changes">
+        <h2 id="changes">10. Changes and contact</h2>
+        <p>
+          If these terms change in an important way, the application will ask you to accept the new version before you
+          continue. Questions about these terms or about your data can be sent to Team 7 (Equipo 7) through the school.
+        </p>
+      </section>
+
+      <footer>Assistant Helper · Team 7 · Bilingual Executive Secretary program</footer>
+    </main>
+  </body>
+</html>

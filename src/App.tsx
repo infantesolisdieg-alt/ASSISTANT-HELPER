@@ -8,9 +8,11 @@ import { Sidebar } from './components/Sidebar';
 import { Toast } from './components/Toast';
 import { Topbar } from './components/Topbar';
 import { Upload } from './components/Upload';
+import { TermsGate } from './components/Terms';
 import { Welcome } from './components/Welcome';
 import { CloudSync } from './cloud/CloudSync';
 import { StoreProvider, useStore } from './state/store';
+import { TERMS_VERSION } from './terms';
 
 function CurrentView() {
   const { state } = useStore();
@@ -46,6 +48,14 @@ function Shell() {
     return (
       <div className="app app-welcome">
         <Welcome />
+      </div>
+    );
+  }
+  if (state.profile.termsVersion !== TERMS_VERSION) {
+    // Cuenta que todavía no aceptó la versión actual de los términos
+    return (
+      <div className="app app-welcome">
+        <TermsGate />
       </div>
     );
   }

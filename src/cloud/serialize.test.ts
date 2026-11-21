@@ -69,4 +69,14 @@ describe('account', () => {
     expect(settingsFromCloud(a.settings)).toEqual(DEFAULT_SETTINGS);
     expect(settingsFromCloud('{bad')).toBeNull();
   });
+
+  it('saves the accepted terms only when they exist (Firestore rejects undefined)', () => {
+    const none = accountToCloud({ name: 'Ana', role: 'Teacher', group: '' }, DEFAULT_SETTINGS);
+    expect('terms' in none).toBe(false);
+    const withTerms = accountToCloud(
+      { name: 'Ana', role: 'Teacher', group: '', termsVersion: '2026-11-20', termsAcceptedAt: 123 },
+      DEFAULT_SETTINGS,
+    );
+    expect(withTerms.terms).toEqual({ version: '2026-11-20', acceptedAt: 123 });
+  });
 });

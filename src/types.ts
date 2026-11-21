@@ -11,6 +11,9 @@ export interface TeacherProfile {
   uid?: string;
   email?: string;
   photoURL?: string;
+  /** Versión de los términos que aceptó (ver src/terms.ts) y cuándo. */
+  termsVersion?: string;
+  termsAcceptedAt?: number;
 }
 
 export const DEMO_PROFILE: TeacherProfile = {

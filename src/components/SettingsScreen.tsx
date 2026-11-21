@@ -16,6 +16,7 @@ import {
   type Settings,
 } from '../settings';
 import { newId, useStore } from '../state/store';
+import { PrivacyCard } from './Terms';
 
 /**
  * Campo numérico que permite borrar y escribir libremente: guarda el valor solo cuando es
@@ -84,7 +85,7 @@ function ProfileCard() {
         defaultValue={p[key]}
         placeholder={placeholder}
         onBlur={(e) => {
-          const v = e.target.value.replace(/s+/g, ' ').trim();
+          const v = e.target.value.replace(/\s+/g, ' ').trim();
           if (key === 'name' && !v) {
             e.target.value = p.name;
             return;
@@ -420,6 +421,8 @@ export function SettingsScreen() {
           Restore defaults
         </button>
       </div>
+
+      {state.profile && <PrivacyCard />}
     </div>
   );
 }

@@ -1,10 +1,12 @@
 // Pantalla de bienvenida. Con Firebase configurado: "Continue with Google" (el trabajo se guarda en la
 // cuenta). Siempre está la opción sin cuenta: el perfil vive en memoria y se borra al cerrar la pestaña.
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { cloudEnabled } from '../cloud/config';
 import { useStore } from '../state/store';
-import { DEMO_PROFILE } from '../types';
+import { acceptTermsNow, forgetAcceptance } from '../terms';
+import { DEMO_PROFILE, type TeacherProfile } from '../types';
+import { TermsDialog } from './Terms';
 import { Icon, type IconName } from './icons';
 
 const FEATURES: { icon: IconName; title: string; text: string }[] = [
@@ -22,8 +24,28 @@ export function Welcome() {
   const [googleBusy, setGoogleBusy] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [showLocal, setShowLocal] = useState(!cloudEnabled);
+  const [agreed, setAgreed] = useState(false);
+  const [agreeError, setAgreeError] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+
+  // Cada profesor que llega a la bienvenida acepta los términos de nuevo
+  useEffect(() => forgetAcceptance(), []);
+
+  /** Revisa que se hayan aceptado los términos; si no, marca la casilla en rojo. */
+  const checkAgreed = () => {
+    if (agreed) return true;
+    setAgreeError(true);
+    document.getElementById('terms-agree')?.focus();
+    return false;
+  };
+  const start = (profile: TeacherProfile) => {
+    if (!checkAgreed()) return;
+    dispatch({ type: 'signIn', profile: { ...profile, ...acceptTermsNow() } });
+  };
 
   const google = async () => {
+    if (!checkAgreed()) return;
+    acceptTermsNow();
     setGoogleBusy(true);
     setGoogleError(null);
     try {
@@ -48,10 +70,7 @@ export function Welcome() {
     e.preventDefault();
     setTouched(true);
     if (!name.trim()) return;
-    dispatch({
-      type: 'signIn',
-      profile: { name: name.trim().replace(/\s+/g, ' '), role: role.trim() || 'Teacher', group: group.trim() },
-    });
+    start({ name: name.trim().replace(/\s+/g, ' '), role: role.trim() || 'Teacher', group: group.trim() });
   };
 
   return (
@@ -90,6 +109,34 @@ export function Welcome() {
       <section className="welcome-panel">
         <form className="welcome-form card" onSubmit={submit} noValidate>
           <h2>Welcome</h2>
+          <div className={`terms-agree${agreeError && !agreed ? ' terms-agree-error' : ''}`}>
+            <label className="checkbox">
+              <input
+                id="terms-agree"
+                type="checkbox"
+                checked={agreed}
+                aria-describedby={agreeError && !agreed ? 'terms-agree-error' : undefined}
+                onChange={(e) => {
+                  setAgreed(e.target.checked);
+                  setAgreeError(false);
+                }}
+              />
+              <span>
+                I have read and agree to the{' '}
+                <button type="button" className="inline-link" onClick={() => setShowTerms(true)}>
+                  Terms of Use and Privacy Notice
+                </button>
+                {cloudEnabled
+                  ? ', including how Assistant Helper uses my Google account and the Google Drive files I choose.'
+                  : '.'}
+              </span>
+            </label>
+            {agreeError && !agreed && (
+              <p id="terms-agree-error" className="form-hint text-bad" role="alert">
+                Accept the terms to continue.
+              </p>
+            )}
+          </div>
           {cloudEnabled && (
             <>
               <p className="muted-text">Sign in to keep your submissions, groups and reviews saved between sessions.</p>
@@ -175,7 +222,7 @@ export function Welcome() {
           <button
             type="button"
             className="button button-link welcome-demo"
-            onClick={() => dispatch({ type: 'signIn', profile: DEMO_PROFILE })}
+            onClick={() => start(DEMO_PROFILE)}
           >
             Continue with the demo profile ({DEMO_PROFILE.name})
           </button>
@@ -183,6 +230,15 @@ export function Welcome() {
             </>
           )}
         </form>
+        {showTerms && (
+          <TermsDialog
+            onClose={() => setShowTerms(false)}
+            onAgree={() => {
+              setAgreed(true);
+              setAgreeError(false);
+            }}
+          />
+        )}
       </section>
     </div>
   );

@@ -111,13 +111,18 @@ export function fromCloud(id: string, r: CloudSubmission): DocItem {
 export interface CloudAccount {
   profile: { name: string; role: string; group: string };
   settings: string;
+  /** Términos aceptados (versión y fecha). */
+  terms?: { version: string; acceptedAt: number };
 }
 
 export function accountToCloud(profile: TeacherProfile, settings: Settings): CloudAccount {
-  return {
+  const account: CloudAccount = {
     profile: { name: profile.name, role: profile.role, group: profile.group },
     settings: serializeSettings(settings),
   };
+  // Firestore no acepta undefined: los términos solo se incluyen si ya se aceptaron
+  if (profile.termsVersion) account.terms = { version: profile.termsVersion, acceptedAt: profile.termsAcceptedAt ?? Date.now() };
+  return account;
 }
 
 /** Lee la configuración guardada; si está dañada se usa la configuración por defecto. */

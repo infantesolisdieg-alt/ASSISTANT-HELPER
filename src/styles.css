@@ -3185,3 +3185,201 @@ mark.search-hit {
     animation: none;
   }
 }
+
+/* ---------- v1.7: términos, privacidad y selector de Google Drive ---------- */
+.terms-agree {
+  margin: 4px 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+.terms-agree .checkbox {
+  align-items: flex-start;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text);
+}
+.terms-agree .checkbox input {
+  flex: none;
+  margin-top: 1px;
+}
+.terms-agree-error {
+  border-color: var(--st-bad);
+  background: var(--bad-bg);
+}
+.terms-agree .form-hint {
+  margin: 6px 0 0 26px;
+}
+.inline-link {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--red);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.inline-link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+  border-radius: 2px;
+}
+.terms-frame {
+  display: block;
+  width: 100%;
+  height: min(62vh, 620px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+.modal:has(.terms-frame) {
+  max-width: 880px;
+}
+.terms-newtab {
+  margin-right: auto;
+}
+.terms-gate {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(139, 30, 45, 0.12), transparent 45%),
+    var(--bg);
+}
+.terms-gate-card {
+  width: 100%;
+  max-width: 900px;
+  padding: 28px;
+  box-shadow: var(--shadow-md);
+  animation: fadeUp 360ms ease-out both;
+}
+.terms-gate-head {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.terms-gate-head h1 {
+  font-family: var(--serif);
+  font-size: 24px;
+  color: var(--red-dark);
+  margin: 0 0 4px;
+}
+.terms-gate-head p {
+  margin: 0;
+}
+.terms-points {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+}
+.terms-points li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--red-light);
+  color: var(--red-dark);
+  font-size: 14px;
+}
+.terms-frame-tall {
+  height: min(52vh, 560px);
+}
+.terms-gate-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+.privacy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+.privacy-item {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.privacy-item h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--red-dark);
+}
+.privacy-item p {
+  margin: 4px 0 12px;
+}
+.privacy-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--red-light);
+  color: var(--red);
+}
+.privacy-danger {
+  border-color: #e6c1c6;
+  background: #fdf8f8;
+}
+
+/* Selector de Google Drive: el contenido es de Google; aquí solo se cambia el fondo y el marco */
+.picker-dialog-bg {
+  background-color: #2a0a10 !important;
+  opacity: 0.6 !important;
+}
+.picker-dialog {
+  border: 0 !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow:
+    0 0 0 5px rgba(139, 30, 45, 0.85),
+    0 28px 80px rgba(20, 4, 8, 0.55) !important;
+}
+.picker-banner {
+  position: fixed;
+  z-index: 1002;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 10px 10px 0 0;
+  background: var(--red-dark);
+  color: #fff;
+  font-size: 14px;
+  box-shadow: 0 -4px 18px rgba(20, 4, 8, 0.35);
+  pointer-events: none;
+  animation: fade-in 200ms ease;
+}
+.picker-banner img {
+  border-radius: 50%;
+  background: #fff;
+}
+.picker-banner span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #f8e9eb;
+}
+.picker-banner strong {
+  color: #fff;
+}

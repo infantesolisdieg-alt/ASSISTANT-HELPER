@@ -8,6 +8,7 @@ import { useEffect, useRef } from 'react';
 import { useStore } from '../state/store';
 import type { DocItem, TeacherProfile } from '../types';
 import { cloudEnabled } from './config';
+import { sessionAcceptance } from '../terms';
 import { accountToCloud, fromCloud, settingsFromCloud, toCloud, type CloudSubmission } from './serialize';
 
 const DEBOUNCE_MS = 900;
@@ -59,10 +60,15 @@ export function CloudSync() {
               uid: user.uid,
               email: user.email,
               photoURL: user.photoURL,
+              // Términos: los guardados en la cuenta o los que se aceptaron en la bienvenida
+              ...(account?.terms
+                ? { termsVersion: account.terms.version, termsAcceptedAt: account.terms.acceptedAt }
+                : sessionAcceptance() ?? {}),
             };
             createdAt.current = new Map(submissions.map((s) => [s.id, s.rec.createdAt ?? Date.now()]));
             prime.current = true;
-            accountExists.current = !!account;
+            // Si los términos se aceptaron en la bienvenida y la cuenta no los tiene, se guarda la cuenta enseguida
+            accountExists.current = !!account && account.terms?.version === profile.termsVersion;
             dispatch({
               type: 'hydrate',
               profile,
@@ -75,7 +81,15 @@ export function CloudSync() {
             // Sin conexión: la docente puede trabajar y se reintenta el guardado después
             dispatch({
               type: 'hydrate',
-              profile: { name: user.name, role: 'Teacher', group: '', uid: user.uid, email: user.email, photoURL: user.photoURL },
+              profile: {
+                name: user.name,
+                role: 'Teacher',
+                group: '',
+                uid: user.uid,
+                email: user.email,
+                photoURL: user.photoURL,
+                ...(sessionAcceptance() ?? {}),
+              },
               settings: null,
               docs: [],
             });
