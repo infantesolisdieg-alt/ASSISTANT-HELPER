@@ -3,6 +3,7 @@
 // acompañados de texto, para no depender solo del color.
 
 import { useState, type ReactNode } from 'react';
+import { t } from '../i18n';
 
 export type Tone = 'ok' | 'warn' | 'bad' | 'neutral';
 
@@ -190,7 +191,7 @@ export function SimilarityBars({
             key={r.id}
             type="button"
             className="bar-row"
-            aria-label={`${r.label}: ${Math.round(r.value)}% similarity, ${r.statusLabel}. Open review.`}
+            aria-label={t('{name}: {p}% similarity, {status}. Open review.', { name: r.label, p: Math.round(r.value), status: r.statusLabel })}
             onClick={() => onSelect(r.id)}
             onMouseEnter={(e) =>
               show(e, (

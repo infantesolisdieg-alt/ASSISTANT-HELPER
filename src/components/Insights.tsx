@@ -2,6 +2,8 @@
 
 import type { ReactNode } from 'react';
 import { HIGH_MATCH_PERCENT } from '../analysis/similarity';
+import { t } from '../i18n';
+import { tRich } from '../i18n/rich';
 import { nextPending, useStore } from '../state/store';
 import { Icon, type IconName } from './icons';
 
@@ -23,25 +25,24 @@ export function Insights() {
   if (top) {
     const a = docById(top.a);
     const b = docById(top.b);
-    const bName = b?.isReference ? `the reference “${b.assignmentTitle}”` : b?.studentName;
+    const bName = b?.isReference ? t('the reference “{title}”', { title: b.assignmentTitle }) : b?.studentName;
     items.push({
       key: 'pair',
       icon: 'plagiarism',
       tone: top.max >= HIGH_MATCH_PERCENT ? 'bad' : 'warn',
-      text: (
-        <>
-          <strong>{a?.studentName}</strong> and <strong>{bName}</strong> share up to <strong>{Math.round(top.max)}%</strong>{' '}
-          of their text.
-        </>
-      ),
-      action: { label: 'Compare', onClick: () => go('review', top.a) },
+      text: tRich('{a} and {b} share up to {p} of their text.', {
+        a: <strong>{a?.studentName}</strong>,
+        b: <strong>{bName}</strong>,
+        p: <strong>{Math.round(top.max)}%</strong>,
+      }),
+      action: { label: t('Compare'), onClick: () => go('review', top.a) },
     });
   } else if (submissions.length > 1) {
     items.push({
       key: 'pair',
       icon: 'plagiarism',
       tone: 'ok',
-      text: <>No pair of documents reaches the {threshold}% similarity threshold.</>,
+      text: t('No pair of documents reaches the {threshold}% similarity threshold.', { threshold }),
     });
   }
 
@@ -54,21 +55,13 @@ export function Insights() {
             key: 'ai',
             icon: 'ai',
             tone: 'warn',
-            text: (
-              <>
-                <strong>{elevated.length}</strong> submission{elevated.length === 1 ? ' shows' : 's show'} elevated AI indicators
-                {elevated.length === 1 && (
-                  <>
-                    {' '}
-                    (<strong>{elevated[0].studentName}</strong>)
-                  </>
-                )}
-                . Treat this as advisory.
-              </>
-            ),
-            action: { label: 'View', onClick: () => go('ai') },
+            text:
+              elevated.length === 1
+                ? tRich('{name} shows elevated AI indicators. Treat this as advisory.', { name: <strong>{elevated[0].studentName}</strong> })
+                : tRich('{n} submissions show elevated AI indicators. Treat this as advisory.', { n: <strong>{elevated.length}</strong> }),
+            action: { label: t('View'), onClick: () => go('ai') },
           }
-        : { key: 'ai', icon: 'ai', tone: 'ok', text: <>No submission shows elevated AI indicators.</> },
+        : { key: 'ai', icon: 'ai', tone: 'ok', text: t('No submission shows elevated AI indicators.') },
     );
   }
 
@@ -88,11 +81,11 @@ export function Insights() {
       key: 'format',
       icon: 'review',
       tone: 'neutral',
-      text: (
-        <>
-          Most common issue: <strong>{common.name}</strong> in {common.n} of {submissions.length} submissions.
-        </>
-      ),
+      text: tRich('Most common issue: {issue} in {n} of {total} submissions.', {
+        issue: <strong>{common.name}</strong>,
+        n: common.n,
+        total: submissions.length,
+      }),
     });
   }
 
@@ -104,13 +97,11 @@ export function Insights() {
       key: 'pending',
       icon: 'clock',
       tone: 'neutral',
-      text: (
-        <>
-          <strong>{pending}</strong> submission{pending === 1 ? ' is' : 's are'} waiting for your review. Next:{' '}
-          <strong>{next.studentName}</strong>.
-        </>
-      ),
-      action: { label: 'Start', onClick: () => go('review', next.id) },
+      text: tRich(pending === 1 ? '{n} submission is waiting for your review. Next: {name}.' : '{n} submissions are waiting for your review. Next: {name}.', {
+        n: <strong>{pending}</strong>,
+        name: <strong>{next.studentName}</strong>,
+      }),
+      action: { label: t('Start'), onClick: () => go('review', next.id) },
     });
   }
 
@@ -118,7 +109,7 @@ export function Insights() {
 
   return (
     <section className="card insights" aria-labelledby="insights-title">
-      <h2 id="insights-title">Highlights</h2>
+      <h2 id="insights-title">{t('Highlights')}</h2>
       <ul>
         {items.map((it, i) => (
           <li key={it.key} className={`insight insight-${it.tone}`} style={{ animationDelay: `${i * 60}ms` }}>

@@ -3383,3 +3383,225 @@ mark.search-hit {
 .picker-banner strong {
   color: #fff;
 }
+
+/* ---------- v1.8: idioma (inglés / español) ---------- */
+.segmented button[aria-checked='true'] {
+  background: #fff;
+  color: var(--red-dark);
+  box-shadow: var(--shadow-sm);
+}
+.lang-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.lang-choice .field-label {
+  margin: 0;
+}
+.lang-switch {
+  flex: none;
+}
+.lang-fade {
+  animation: lang-in 380ms ease both;
+}
+@keyframes lang-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* Texto de bienvenida que alterna entre idiomas: las dos versiones ocupan la misma celda,
+   así el cambio es un fundido cruzado sin saltos de altura */
+.hero-swap {
+  display: grid;
+}
+.hero-layer {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  pointer-events: none;
+}
+.hero-layer.is-active {
+  pointer-events: auto;
+}
+.hero-layer .welcome-title,
+.hero-layer .welcome-lead,
+.hero-layer .welcome-features li {
+  animation: none;
+}
+.hero-word {
+  display: inline-block;
+  white-space: pre;
+  opacity: 0;
+  transform: translateY(10px);
+  filter: blur(6px);
+  transition:
+    opacity 520ms ease,
+    transform 520ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    filter 520ms ease;
+}
+.hero-layer .welcome-lead,
+.hero-layer .welcome-privacy {
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 560ms ease,
+    transform 560ms ease;
+}
+.hero-layer .welcome-features li {
+  opacity: 0;
+  transform: translateX(-10px);
+  transition:
+    opacity 520ms ease,
+    transform 520ms ease,
+    background-color 200ms ease;
+}
+.hero-layer.is-active .hero-word,
+.hero-layer.is-active .welcome-lead,
+.hero-layer.is-active .welcome-privacy,
+.hero-layer.is-active .welcome-features li {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+.hero-layer.is-active .welcome-lead {
+  transition-delay: 220ms;
+}
+.hero-layer.is-active .welcome-privacy {
+  transition-delay: 520ms;
+}
+/* Al salir, todo se desvanece rápido y a la vez */
+.hero-layer:not(.is-active) .hero-word,
+.hero-layer:not(.is-active) .welcome-lead,
+.hero-layer:not(.is-active) .welcome-privacy,
+.hero-layer:not(.is-active) .welcome-features li {
+  transition-duration: 280ms;
+  transition-delay: 0ms !important;
+}
+.hero-lang {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+.hero-lang-pills {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.hero-lang-pill {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 2px 9px;
+  border-radius: 999px;
+  color: #ead3d7;
+  transition:
+    background-color 300ms ease,
+    color 300ms ease;
+}
+.hero-lang-pill.is-active {
+  background: #fff;
+  color: var(--red-dark);
+}
+.hero-lang-track {
+  position: relative;
+  width: 72px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+}
+.hero-lang-fill {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  transform-origin: left;
+  animation: hero-progress linear forwards;
+}
+.hero-lang-fill.is-paused {
+  animation: none;
+  transform: scaleX(0);
+}
+@keyframes hero-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.hero-lang-pause {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+.hero-lang-pause:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.hero-lang-pause:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-word,
+  .hero-layer .welcome-lead,
+  .hero-layer .welcome-privacy,
+  .hero-layer .welcome-features li {
+    transform: none !important;
+    filter: none !important;
+    transition: opacity 400ms ease !important;
+  }
+  .hero-lang-fill {
+    animation: none;
+    transform: scaleX(1);
+  }
+  .lang-fade {
+    animation: none;
+  }
+}
+
+/* Nombre en mayúsculas: más compacto, en dos líneas si no cabe, y la barra lateral nunca se ensancha */
+.sidebar > * {
+  min-width: 0;
+}
+.brand-name {
+  font-size: 15px;
+  letter-spacing: 0.03em;
+  line-height: 1.2;
+  white-space: normal;
+  min-width: 0;
+}
+.brand-logo {
+  flex: none;
+}
+@media (max-width: 1365.98px) {
+  .brand-name {
+    font-size: 14px;
+    white-space: normal;
+  }
+}
+.session-text,
+.session-title,
+.profile-info {
+  overflow-wrap: anywhere;
+}
+.session-box .button {
+  white-space: normal;
+  text-align: center;
+}

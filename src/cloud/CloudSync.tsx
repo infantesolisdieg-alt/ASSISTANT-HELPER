@@ -5,6 +5,7 @@
 // No dibuja nada: solo actualiza el estado del guardado que muestra la barra lateral.
 
 import { useEffect, useRef } from 'react';
+import { t, tIn } from '../i18n';
 import { useStore } from '../state/store';
 import type { DocItem, TeacherProfile } from '../types';
 import { cloudEnabled } from './config';
@@ -55,8 +56,9 @@ export function CloudSync() {
             const { account, submissions } = await cloud.loadAccount(user.uid);
             const profile: TeacherProfile = {
               name: account?.profile?.name || user.name,
-              role: account?.profile?.role || 'Teacher',
+              role: account?.profile?.role || t('Teacher'),
               group: account?.profile?.group || '',
+              ...(account?.profile?.lang === 'es' || account?.profile?.lang === 'en' ? { lang: account.profile.lang } : {}),
               uid: user.uid,
               email: user.email,
               photoURL: user.photoURL,
@@ -75,7 +77,15 @@ export function CloudSync() {
               settings: settingsFromCloud(account?.settings),
               docs: submissions.map((s) => fromCloud(s.id, s.rec)),
             });
-            if (submissions.length) dispatch({ type: 'toast', message: `Welcome back! ${submissions.length} saved submission(s) loaded.` });
+            if (submissions.length) {
+              // El aviso sale en el idioma guardado en la cuenta (todavía no se aplica en pantalla)
+              const lang = profile.lang ?? stateRef.current.lang;
+              const n = submissions.length;
+              dispatch({
+                type: 'toast',
+                message: tIn(lang, n === 1 ? 'Welcome back! {n} saved submission loaded.' : 'Welcome back! {n} saved submissions loaded.', { n }),
+              });
+            }
           } catch (e) {
             console.error('Assistant Helper: cloud load failed', e);
             // Sin conexión: la docente puede trabajar y se reintenta el guardado después
@@ -83,7 +93,7 @@ export function CloudSync() {
               type: 'hydrate',
               profile: {
                 name: user.name,
-                role: 'Teacher',
+                role: t('Teacher'),
                 group: '',
                 uid: user.uid,
                 email: user.email,
@@ -98,7 +108,7 @@ export function CloudSync() {
         });
       } catch {
         dispatch({ type: 'authReady' });
-        dispatch({ type: 'cloudStatus', status: { state: 'error', message: 'The cloud could not be loaded. Check your internet connection.' } });
+        dispatch({ type: 'cloudStatus', status: { state: 'error', message: t('The cloud could not be loaded. Check your internet connection.') } });
       }
     })();
     return () => {

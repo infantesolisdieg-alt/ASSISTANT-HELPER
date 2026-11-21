@@ -2,6 +2,7 @@
 // con resaltados de similitud (plagio) y de indicadores de IA.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { t, tn } from '../i18n';
 import type { DocItem } from '../types';
 import { Icon } from './icons';
 import { buildSegments, type Highlight } from './highlights';
@@ -44,38 +45,38 @@ export function DocumentViewer({
   useEffect(() => {
     if (!jumpToken) return;
     setShowPlag(true);
-    const t = window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
       scrollRef.current?.querySelector('.hl-focus, .ov-focus')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 40);
-    return () => window.clearTimeout(t);
+    return () => window.clearTimeout(timer);
   }, [jumpToken]);
 
   const ocrPages = doc.pages?.filter((p) => p.ocr).length ?? 0;
 
   return (
-    <section className="viewer card" aria-label="Document viewer">
+    <section className="viewer card" aria-label={t('Document viewer')}>
       <div className="viewer-toolbar">
         {canOriginal && (
-          <div className="segmented" role="group" aria-label="Viewer mode">
+          <div className="segmented" role="group" aria-label={t('Viewer mode')}>
             <button type="button" aria-pressed={mode === 'original'} onClick={() => setMode('original')}>
-              <Icon name="review" size={15} /> Original
+              <Icon name="review" size={15} /> {t('Original')}
             </button>
             <button type="button" aria-pressed={mode === 'text'} onClick={() => setMode('text')}>
-              <Icon name="pen" size={15} /> Text
+              <Icon name="pen" size={15} /> {t('Text')}
             </button>
           </div>
         )}
-        <div className="legend" aria-label="Highlight legend">
+        <div className="legend" aria-label={t('Highlight legend')}>
           <label className="checkbox">
             <input type="checkbox" checked={showPlag} onChange={(e) => setShowPlag(e.target.checked)} />
             <span className="swatch swatch-plag" aria-hidden="true" />
-            Similarity ({plag.length})
+            {t('Similarity ({n})', { n: plag.length })}
           </label>
           {aiEnabled && (
             <label className="checkbox">
               <input type="checkbox" checked={showAi} onChange={(e) => setShowAi(e.target.checked)} />
               <span className="swatch swatch-ai" aria-hidden="true" />
-              AI indicators ({ai.length})
+              {t('AI indicators ({n})', { n: ai.length })}
             </label>
           )}
         </div>
@@ -86,10 +87,19 @@ export function DocumentViewer({
           <Icon name="alert" size={15} />
           <span>
             {ocrPages > 0 &&
-              `Text on ${doc.kind === 'image' ? 'this image' : `${ocrPages} page${ocrPages === 1 ? '' : 's'}`} was recognized automatically (OCR${
-                doc.ocrConfidence ? `, ${Math.round(doc.ocrConfidence)}% confidence` : ''
-              }). Compare unusual words with the original. `}
-            {doc.skippedPages ? `${doc.skippedPages} scanned page(s) were not read (limit reached).` : ''}
+              (doc.kind === 'image'
+                ? t('Text on this image was recognized automatically (OCR{confidence}). Compare unusual words with the original.', {
+                    confidence: doc.ocrConfidence ? t(', {p}% confidence', { p: Math.round(doc.ocrConfidence) }) : '',
+                  })
+                : tn(
+                    ocrPages,
+                    'Text on {n} page was recognized automatically (OCR{confidence}). Compare unusual words with the original.',
+                    'Text on {n} pages was recognized automatically (OCR{confidence}). Compare unusual words with the original.',
+                    { confidence: doc.ocrConfidence ? t(', {p}% confidence', { p: Math.round(doc.ocrConfidence) }) : '' },
+                  )) + ' '}
+            {doc.skippedPages
+              ? tn(doc.skippedPages, '{n} scanned page was not read (limit reached).', '{n} scanned pages were not read (limit reached).')
+              : ''}
           </span>
         </div>
       )}

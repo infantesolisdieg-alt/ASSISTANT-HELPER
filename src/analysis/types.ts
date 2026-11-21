@@ -1,5 +1,7 @@
 // Tipos de resultados de análisis compartidos entre la lógica y la interfaz.
 
+import { tk } from '../i18n';
+
 export type CheckOutcome = 'passed' | 'review' | 'failed' | 'na';
 
 export interface CheckResult {
@@ -16,4 +18,4 @@ export type SimilarityStatus = 'clear' | 'review' | 'high';
 
 export type AiLevel = 'Low' | 'Moderate' | 'Elevated';
 
-export const NOT_AVAILABLE = 'Not available for this file type';
+export const NOT_AVAILABLE = tk('Not available for this file type');

@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { rectsForRange, type Rect } from '../extract/layout';
 import type { ChartData, DocBlock, FigureInfo, PageLayout } from '../extract/types';
+import { locale, t } from '../i18n';
 import type { DocItem } from '../types';
 import { buildSegments, type Highlight } from './highlights';
 
@@ -114,13 +115,13 @@ function PdfPage({ url, num, layout, ...layers }: LayerProps & { url: string; nu
       >
         <canvas ref={canvasRef} />
         {status !== 'ready' && (
-          <div className="page-placeholder">{status === 'error' ? 'This page could not be displayed.' : <span className="spinner" />}</div>
+          <div className="page-placeholder">{status === 'error' ? t('This page could not be displayed.') : <span className="spinner" />}</div>
         )}
         <Overlay layout={layout} {...layers} />
       </div>
       <div className="page-number">
-        Page {num}
-        {layout.ocr && <span className="page-ocr">Text recognized (OCR)</span>}
+        {t('Page {n}', { n: num })}
+        {layout.ocr && <span className="page-ocr">{t('Text recognized (OCR)')}</span>}
       </div>
     </div>
   );
@@ -132,7 +133,7 @@ function ImagePage({ url, layout, ...layers }: LayerProps & { url: string; layou
   return (
     <div className="page-frame">
       <div className="page-sheet is-ready" style={{ aspectRatio: `${layout.width} / ${layout.height}` }}>
-        <img src={url} alt="Uploaded image" />
+        <img src={url} alt={t('Uploaded image')} />
         <Overlay layout={layout} {...layers} />
       </div>
     </div>
@@ -169,14 +170,14 @@ export function ChartPreview({ chart }: { chart: ChartData }) {
   return (
     <div className="chart-preview">
       <div className="chart-preview-head">
-        <strong>{chart.title ?? 'Untitled chart'}</strong>
-        <span className="file-chip">{chart.type}</span>
+        <strong>{chart.title ?? t('Untitled chart')}</strong>
+        <span className="file-chip">{t(chart.type)}</span>
       </div>
       <div className="chart-table-wrap">
         <table className="chart-table">
           <thead>
             <tr>
-              <th scope="col">{chart.axisTitles[0] ?? 'Category'}</th>
+              <th scope="col">{chart.axisTitles[0] ?? t('Category')}</th>
               {chart.series.map((s) => (
                 <th key={s.name} scope="col">
                   {s.name}
@@ -194,7 +195,7 @@ export function ChartPreview({ chart }: { chart: ChartData }) {
                     <td key={s.name}>
                       <span className="chart-cell">
                         <span className="chart-cell-bar" style={{ width: `${Number.isFinite(v) ? Math.max(0, (v / max) * 100) : 0}%` }} />
-                        <span className="num">{Number.isFinite(v) ? v.toLocaleString('en-US') : '–'}</span>
+                        <span className="num">{Number.isFinite(v) ? v.toLocaleString(locale()) : '–'}</span>
                       </span>
                     </td>
                   );
@@ -204,7 +205,7 @@ export function ChartPreview({ chart }: { chart: ChartData }) {
           </tbody>
         </table>
       </div>
-      {chart.axisTitles.length > 0 && <p className="small muted-text">Axis titles: {chart.axisTitles.join(' · ')}</p>}
+      {chart.axisTitles.length > 0 && <p className="small muted-text">{t('Axis titles: {list}', { list: chart.axisTitles.join(' · ') })}</p>}
     </div>
   );
 }
@@ -215,9 +216,9 @@ function FigureBlock({ fig, index }: { fig: FigureInfo; index: number }) {
       {fig.kind === 'chart' && fig.chart ? (
         <ChartPreview chart={fig.chart} />
       ) : fig.src ? (
-        <img src={fig.src} alt={fig.caption ?? `Figure ${index + 1}`} loading="lazy" />
+        <img src={fig.src} alt={fig.caption ?? t('Figure {n}', { n: index + 1 })} loading="lazy" />
       ) : (
-        <div className="doc-figure-missing">Image (this format cannot be previewed in the browser)</div>
+        <div className="doc-figure-missing">{t('Image (this format cannot be previewed in the browser)')}</div>
       )}
     </figure>
   );

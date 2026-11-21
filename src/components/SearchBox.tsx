@@ -1,6 +1,7 @@
 // Caja de búsqueda con botón para limpiar y atajo de teclado "/" para enfocarla.
 
 import { useEffect, useRef } from 'react';
+import { t } from '../i18n';
 
 export function SearchBox({
   id,
@@ -62,7 +63,7 @@ export function SearchBox({
         }}
       />
       {value ? (
-        <button type="button" className="icon-button searchbox-clear" aria-label="Clear search" onClick={() => onChange('')}>
+        <button type="button" className="icon-button searchbox-clear" aria-label={t('Clear search')} onClick={() => onChange('')}>
           ×
         </button>
       ) : (

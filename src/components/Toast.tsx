@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { t } from '../i18n';
 import { useStore } from '../state/store';
 import { Icon } from './icons';
 
@@ -23,7 +24,7 @@ export function Toast() {
             <Icon name="check" size={18} />
           </span>
           <span className="toast-text">{visible.message}</span>
-          <button type="button" className="icon-button toast-close" aria-label="Dismiss message" onClick={() => setVisible(null)}>
+          <button type="button" className="icon-button toast-close" aria-label={t('Dismiss message')} onClick={() => setVisible(null)}>
             ×
           </button>
           <span className="toast-timer" style={{ animationDuration: `${DURATION}ms` }} aria-hidden="true" />

@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { CITATION_EXAMPLE } from '../analysis/citations';
 import { lineSpacingLabel } from '../analysis/format';
+import { LANGS, t, type Lang } from '../i18n';
 import {
+  ALIGNMENT_LABELS,
   ALIGNMENTS,
   CHECK_KEYS,
   CHECK_LABELS,
@@ -97,14 +99,35 @@ function ProfileCard() {
   );
   return (
     <section className="card">
-      <h2>Your profile</h2>
+      <h2>{t('Your profile')}</h2>
       <p className="muted-text small">
-        {p.uid ? `Signed in with Google as ${p.email}. Changes are saved to your account.` : 'Used in the sidebar and in exported reports during this session.'}
+        {p.uid
+          ? t('Signed in with Google as {email}. Changes are saved to your account.', { email: p.email ?? '' })
+          : t('Used in the sidebar and in exported reports during this session.')}
       </p>
       <div className="form-grid">
-        {field('name', 'Full name', 'Your name')}
-        {field('role', 'Role or subject', 'e.g. Teacher · Bilingual Executive Secretary')}
-        {field('group', 'Default group for new files', 'e.g. 5A')}
+        {field('name', t('Full name'), t('Your name'))}
+        {field('role', t('Role or subject'), t('e.g. Teacher · Bilingual Executive Secretary'))}
+        {field('group', t('Default group for new files'), t('e.g. 5A'))}
+        <div className="field">
+          <span className="field-label" id="profile-lang-label">
+            {t('Language')}
+          </span>
+          <div className="segmented lang-switch" role="radiogroup" aria-labelledby="profile-lang-label">
+            {LANGS.map((l) => (
+              <button
+                key={l.id}
+                type="button"
+                role="radio"
+                aria-checked={state.lang === l.id}
+                lang={l.id}
+                onClick={() => dispatch({ type: 'setLang', lang: l.id as Lang })}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -144,9 +167,9 @@ export function SettingsScreen() {
       const parsed = parseSettings(JSON.parse(await file.text()));
       dispatch({ type: 'setSettings', settings: parsed });
       setImportError(null);
-      notify('Settings imported. Results were updated with the new criteria.');
+      notify(t('Settings imported. Results were updated with the new criteria.'));
     } catch (err) {
-      setImportError(err instanceof SyntaxError ? 'The file is not valid JSON.' : (err as Error).message);
+      setImportError(err instanceof SyntaxError ? t('The file is not valid JSON.') : (err as Error).message);
     }
   };
 
@@ -158,18 +181,19 @@ export function SettingsScreen() {
       <section className="card">
         <div className="card-header">
           <div>
-            <h2>Review criteria</h2>
+            <h2>{t('Review criteria')}</h2>
             <p className="muted-text small">
-              Changes apply immediately to every submission. Settings are not saved automatically: use “Export settings” to
-              keep a copy and “Import settings” next time.
+              {state.profile?.uid
+                ? t('Changes apply immediately to every submission and are saved to your Google account.')
+                : t('Changes apply immediately to every submission. Settings are not saved automatically: use “Export settings” to keep a copy and “Import settings” next time.')}
             </p>
           </div>
           <div className="button-row">
             <button type="button" className="button button-secondary" onClick={() => fileRef.current?.click()}>
-              Import settings
+              {t('Import settings')}
             </button>
             <button type="button" className="button button-primary" onClick={exportSettings}>
-              Export settings
+              {t('Export settings')}
             </button>
             <input
               ref={fileRef}
@@ -188,14 +212,14 @@ export function SettingsScreen() {
         </div>
         {importError && (
           <div className="alert alert-bad" role="alert">
-            <strong>Settings were not imported.</strong> {importError}
+            <strong>{t('Settings were not imported.')}</strong> {importError}
           </div>
         )}
 
         <div className="form-grid">
           <div className="field">
             <label className="field-label" htmlFor="citation-style">
-              Citation style
+              {t('Citation style')}
             </label>
             <select
               id="citation-style"
@@ -213,7 +237,7 @@ export function SettingsScreen() {
 
           <div className="field">
             <label className="field-label" htmlFor="threshold">
-              Similarity threshold
+              {t('Similarity threshold')}
             </label>
             <select
               id="threshold"
@@ -221,18 +245,18 @@ export function SettingsScreen() {
               value={s.similarityThreshold}
               onChange={(e) => update({ similarityThreshold: Number(e.target.value) as Settings['similarityThreshold'] })}
             >
-              {THRESHOLDS.map((t) => (
-                <option key={t} value={t}>
-                  {t}%
+              {THRESHOLDS.map((th) => (
+                <option key={th} value={th}>
+                  {th}%
                 </option>
               ))}
             </select>
-            <p className="form-hint">Below the threshold = Clear; from the threshold to 29% = Review; 30% or more = High match.</p>
+            <p className="form-hint">{t('Below the threshold = Clear; from the threshold to 29% = Review; 30% or more = High match.')}</p>
           </div>
 
           <div className="field">
             <label className="field-label" htmlFor="font">
-              Expected font
+              {t('Expected font')}
             </label>
             <input
               id="font"
@@ -251,14 +275,14 @@ export function SettingsScreen() {
 
           <div className="field">
             <label className="field-label" htmlFor="font-size">
-              Font size (pt)
+              {t('Font size (pt)')}
             </label>
             <NumberField id="font-size" value={s.fontSizePt} min={6} max={32} step={0.5} onCommit={(v) => update({ fontSizePt: v })} />
           </div>
 
           <div className="field">
             <label className="field-label" htmlFor="line-spacing">
-              Line spacing
+              {t('Line spacing')}
             </label>
             <select
               id="line-spacing"
@@ -276,15 +300,15 @@ export function SettingsScreen() {
 
           <div className="field">
             <label className="field-label" htmlFor="margins">
-              Margins (cm, all sides)
+              {t('Margins (cm, all sides)')}
             </label>
             <NumberField id="margins" value={s.marginsCm} min={0.5} max={6} step={0.01} onCommit={(v) => update({ marginsCm: v })} />
-            <p className="form-hint">2.54 cm = 1 inch.</p>
+            <p className="form-hint">{t('2.54 cm = 1 inch.')}</p>
           </div>
 
           <div className="field">
             <label className="field-label" htmlFor="alignment">
-              Alignment
+              {t('Alignment')}
             </label>
             <select
               id="alignment"
@@ -294,7 +318,7 @@ export function SettingsScreen() {
             >
               {ALIGNMENTS.map((a) => (
                 <option key={a} value={a}>
-                  {a.charAt(0).toUpperCase() + a.slice(1)}
+                  {t(ALIGNMENT_LABELS[a])}
                 </option>
               ))}
             </select>
@@ -302,12 +326,12 @@ export function SettingsScreen() {
 
           <div className="field">
             <span className="field-label" id="word-range-label">
-              Word count
+              {t('Word count')}
             </span>
             <div className="inline-fields" role="group" aria-labelledby="word-range-label">
               <NumberField
                 id="min-words"
-                label="Minimum words"
+                label={t('Minimum words')}
                 invalid={wordRangeInvalid}
                 value={s.minWords}
                 min={0}
@@ -315,10 +339,10 @@ export function SettingsScreen() {
                 step={10}
                 onCommit={(v) => update({ minWords: v })}
               />
-              <span>to</span>
+              <span>{t('to')}</span>
               <NumberField
                 id="max-words"
-                label="Maximum words"
+                label={t('Maximum words')}
                 invalid={wordRangeInvalid}
                 value={s.maxWords}
                 min={1}
@@ -327,14 +351,14 @@ export function SettingsScreen() {
                 onCommit={(v) => update({ maxWords: v })}
               />
             </div>
-            {wordRangeInvalid && <p className="form-hint text-bad">The minimum is greater than the maximum.</p>}
+            {wordRangeInvalid && <p className="form-hint text-bad">{t('The minimum is greater than the maximum.')}</p>}
           </div>
         </div>
       </section>
 
       <section className="card">
-        <h2>Checks</h2>
-        <p className="muted-text small">Turn off the checks that do not apply to the current assignment.</p>
+        <h2>{t('Checks')}</h2>
+        <p className="muted-text small">{t('Turn off the checks that do not apply to the current assignment.')}</p>
         <div className="toggle-grid">
           {CHECK_KEYS.map((k) => (
             <label key={k} className="checkbox">
@@ -343,20 +367,20 @@ export function SettingsScreen() {
                 checked={s.checks[k]}
                 onChange={(e) => update({ checks: { ...s.checks, [k]: e.target.checked } })}
               />
-              {CHECK_LABELS[k]}
+              {t(CHECK_LABELS[k])}
             </label>
           ))}
         </div>
-        <p className="form-hint">Font, font size, line spacing, margins and alignment can only be checked in .docx files.</p>
+        <p className="form-hint">{t('Font, font size, line spacing, margins and alignment can only be checked in .docx files.')}</p>
       </section>
 
       <section className="card">
-        <h2>Custom rules</h2>
-        <p className="muted-text small">Add your own simple requirements. They appear under “Custom rules” in each review.</p>
+        <h2>{t('Custom rules')}</h2>
+        <p className="muted-text small">{t('Add your own simple requirements. They appear under “Custom rules” in each review.')}</p>
         <div className="rule-form">
           <div className="field">
             <label className="field-label" htmlFor="rule-type">
-              Rule
+              {t('Rule')}
             </label>
             <select
               id="rule-type"
@@ -364,14 +388,14 @@ export function SettingsScreen() {
               value={ruleType}
               onChange={(e) => setRuleType(e.target.value as CustomRuleType)}
             >
-              <option value="must-contain">Must contain word or section</option>
-              <option value="must-not-contain">Must not contain</option>
-              <option value="min-paragraphs">Minimum number of paragraphs</option>
+              <option value="must-contain">{t('Must contain word or section')}</option>
+              <option value="must-not-contain">{t('Must not contain')}</option>
+              <option value="min-paragraphs">{t('Minimum number of paragraphs')}</option>
             </select>
           </div>
           <div className="field grow">
             <label className="field-label" htmlFor="rule-value">
-              {ruleType === 'min-paragraphs' ? 'Paragraphs' : 'Text'}
+              {ruleType === 'min-paragraphs' ? t('Paragraphs') : t('Text')}
             </label>
             <input
               id="rule-value"
@@ -379,17 +403,17 @@ export function SettingsScreen() {
               type={ruleType === 'min-paragraphs' ? 'number' : 'text'}
               min={1}
               value={ruleValue}
-              placeholder={ruleType === 'min-paragraphs' ? 'e.g. 4' : 'e.g. Sincerely'}
+              placeholder={ruleType === 'min-paragraphs' ? t('e.g. 4') : t('e.g. Sincerely')}
               onChange={(e) => setRuleValue(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addRule()}
             />
           </div>
           <button type="button" className="button button-primary" disabled={!ruleValue.trim()} onClick={addRule}>
-            Add custom rule
+            {t('Add custom rule')}
           </button>
         </div>
         {s.customRules.length === 0 ? (
-          <p className="empty-inline">No custom rules yet.</p>
+          <p className="empty-inline">{t('No custom rules yet.')}</p>
         ) : (
           <ul className="rule-list">
             {s.customRules.map((r) => (
@@ -398,10 +422,10 @@ export function SettingsScreen() {
                 <button
                   type="button"
                   className="button button-link"
-                  aria-label={`Remove rule: ${ruleLabel(r)}`}
+                  aria-label={t('Remove rule: {rule}', { rule: ruleLabel(r) })}
                   onClick={() => update({ customRules: s.customRules.filter((x) => x.id !== r.id) })}
                 >
-                  Remove
+                  {t('Remove')}
                 </button>
               </li>
             ))}
@@ -415,10 +439,10 @@ export function SettingsScreen() {
           className="button button-secondary"
           onClick={() => {
             dispatch({ type: 'setSettings', settings: structuredClone(DEFAULT_SETTINGS) });
-            notify('Settings restored to the defaults.');
+            notify(t('Settings restored to the defaults.'));
           }}
         >
-          Restore defaults
+          {t('Restore defaults')}
         </button>
       </div>
 

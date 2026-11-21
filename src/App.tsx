@@ -13,6 +13,7 @@ import { Welcome } from './components/Welcome';
 import { CloudSync } from './cloud/CloudSync';
 import { StoreProvider, useStore } from './state/store';
 import { TERMS_VERSION } from './terms';
+import { APP_NAME, t } from './i18n';
 
 function CurrentView() {
   const { state } = useStore();
@@ -39,7 +40,7 @@ function Shell() {
       <div className="app app-welcome">
         <div className="splash" role="status">
           <img src="/logo-mark.svg" alt="" width="72" height="72" className="splash-logo" />
-          <p>{state.auth === 'checking' ? 'Checking your account…' : 'Loading your saved work…'}</p>
+          <p>{state.auth === 'checking' ? t('Checking your account…') : t('Loading your saved work…')}</p>
         </div>
       </div>
     );
@@ -78,14 +79,20 @@ function Shell() {
   );
 }
 
+/** El aviso de solo computadora en el idioma elegido (necesita el estado para volver a dibujarse). */
+function DesktopOnlyText() {
+  useStore();
+  return <p>{t('{app} is available on desktop computers only.', { app: APP_NAME })}</p>;
+}
+
 export default function App() {
   return (
     <StoreProvider>
       <div className="desktop-only" role="alert">
         <div>
           <img className="desktop-only-logo" src="/logo-mark.svg" alt="" width="96" height="96" />
-          <p className="desktop-only-brand">Assistant Helper</p>
-          <p>Assistant Helper is available on desktop computers only.</p>
+          <p className="desktop-only-brand">{APP_NAME}</p>
+          <DesktopOnlyText />
         </div>
       </div>
       <CloudSync />

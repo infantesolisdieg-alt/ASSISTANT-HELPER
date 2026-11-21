@@ -1,6 +1,7 @@
 // Validación de formato: propiedades del .docx (fuente, tamaño, interlineado, márgenes,
 // alineación) y revisiones para todos los formatos (palabras, título, referencias, citas).
 
+import { t, tk, tn } from '../i18n';
 import type { DocxFormat, FileKind } from '../extract/types';
 import type { Settings } from '../settings';
 import { CITATION_EXAMPLE, findCitations, KIND_LABEL, styleToKind, type CitationKind } from './citations';
@@ -16,8 +17,8 @@ export interface FormatInput {
 const pct = (share: number) => `${Math.round(share * 100)}%`;
 
 export function lineSpacingLabel(v: number): string {
-  if (Math.abs(v - 1) < 0.01) return 'single (1.0)';
-  if (Math.abs(v - 2) < 0.01) return 'double (2.0)';
+  if (Math.abs(v - 1) < 0.01) return t('single (1.0)');
+  if (Math.abs(v - 2) < 0.01) return t('double (2.0)');
   return `${Number(v.toFixed(2))}`;
 }
 
@@ -56,8 +57,19 @@ export function findTitle(paragraphs: string[]): string | null {
 }
 
 function docxOnly(id: string, name: string): CheckResult {
-  return { id, name, outcome: 'na', detail: NOT_AVAILABLE, group: 'format' };
+  return { id, name, outcome: 'na', detail: t(NOT_AVAILABLE), group: 'format' };
 }
+
+/** Nombre de la alineación para los mensajes ("left" → "left-aligned" / "alineado a la izquierda"). */
+function alignLabel(a: string): string {
+  if (a === 'left') return t('left-aligned');
+  if (a === 'right') return t('right-aligned');
+  if (a === 'center') return t('centered');
+  if (a === 'justify') return t('justified');
+  return a;
+}
+
+const SIDE_LABEL: Record<string, string> = { top: tk('top'), right: tk('right'), bottom: tk('bottom'), left: tk('left') };
 
 export function runFormatChecks(input: FormatInput, settings: Settings): CheckResult[] {
   const { checks } = settings;
@@ -67,68 +79,79 @@ export function runFormatChecks(input: FormatInput, settings: Settings): CheckRe
 
   // --- Revisiones exclusivas de .docx ---
   if (checks.font) {
-    if (!f) out.push(docxOnly('font', 'Font'));
-    else if (!f.font) out.push({ id: 'font', name: 'Font', outcome: 'review', detail: 'The font could not be determined from the file.', group: 'format' });
+    if (!f) out.push(docxOnly('font', t('Font')));
+    else if (!f.font) out.push({ id: 'font', name: t('Font'), outcome: 'review', detail: t('The font could not be determined from the file.'), group: 'format' });
     else {
       const ok = f.font.toLowerCase() === settings.font.toLowerCase();
       out.push({
         id: 'font',
-        name: 'Font',
+        name: t('Font'),
         outcome: ok ? (f.fontShare >= 0.9 ? 'passed' : 'review') : 'failed',
         detail: ok
-          ? `${f.font} is used in ${pct(f.fontShare)} of the text.`
-          : `Expected ${settings.font}. Found ${f.font} (${pct(f.fontShare)} of the text).`,
+          ? t('{font} is used in {share} of the text.', { font: f.font, share: pct(f.fontShare) })
+          : t('Expected {expected}. Found {font} ({share} of the text).', { expected: settings.font, font: f.font, share: pct(f.fontShare) }),
         group: 'format',
       });
     }
   }
 
   if (checks.fontSize) {
-    if (!f) out.push(docxOnly('fontSize', 'Font size'));
-    else if (f.fontSizePt == null) out.push({ id: 'fontSize', name: 'Font size', outcome: 'review', detail: 'The font size could not be determined from the file.', group: 'format' });
+    if (!f) out.push(docxOnly('fontSize', t('Font size')));
+    else if (f.fontSizePt == null) out.push({ id: 'fontSize', name: t('Font size'), outcome: 'review', detail: t('The font size could not be determined from the file.'), group: 'format' });
     else {
       const ok = Math.abs(f.fontSizePt - settings.fontSizePt) < 0.01;
       out.push({
         id: 'fontSize',
-        name: 'Font size',
+        name: t('Font size'),
         outcome: ok ? (f.fontSizeShare >= 0.9 ? 'passed' : 'review') : 'failed',
         detail: ok
-          ? `${f.fontSizePt} pt is used in ${pct(f.fontSizeShare)} of the text.`
-          : `Expected ${settings.fontSizePt} pt. Found ${f.fontSizePt} pt (${pct(f.fontSizeShare)} of the text).`,
+          ? t('{size} pt is used in {share} of the text.', { size: f.fontSizePt, share: pct(f.fontSizeShare) })
+          : t('Expected {expected} pt. Found {size} pt ({share} of the text).', {
+              expected: settings.fontSizePt,
+              size: f.fontSizePt,
+              share: pct(f.fontSizeShare),
+            }),
         group: 'format',
       });
     }
   }
 
   if (checks.lineSpacing) {
-    if (!f) out.push(docxOnly('lineSpacing', 'Line spacing'));
+    if (!f) out.push(docxOnly('lineSpacing', t('Line spacing')));
     else if (f.lineSpacing == null) {
       out.push({
         id: 'lineSpacing',
-        name: 'Line spacing',
+        name: t('Line spacing'),
         outcome: 'review',
         detail: f.lineSpacingExactPt
-          ? `The document uses a fixed line height of ${f.lineSpacingExactPt} pt instead of ${lineSpacingLabel(settings.lineSpacing)} spacing.`
-          : 'The line spacing could not be determined from the file.',
+          ? t('The document uses a fixed line height of {pt} pt instead of {expected} spacing.', {
+              pt: f.lineSpacingExactPt,
+              expected: lineSpacingLabel(settings.lineSpacing),
+            })
+          : t('The line spacing could not be determined from the file.'),
         group: 'format',
       });
     } else {
       const ok = Math.abs(f.lineSpacing - settings.lineSpacing) < 0.05;
       out.push({
         id: 'lineSpacing',
-        name: 'Line spacing',
+        name: t('Line spacing'),
         outcome: ok ? (f.lineSpacingShare >= 0.9 ? 'passed' : 'review') : 'failed',
         detail: ok
-          ? `${lineSpacingLabel(f.lineSpacing)} spacing in ${pct(f.lineSpacingShare)} of the text.`
-          : `Expected ${lineSpacingLabel(settings.lineSpacing)}. Found ${lineSpacingLabel(f.lineSpacing)} (${pct(f.lineSpacingShare)} of the text).`,
+          ? t('{spacing} spacing in {share} of the text.', { spacing: lineSpacingLabel(f.lineSpacing), share: pct(f.lineSpacingShare) })
+          : t('Expected {expected}. Found {spacing} ({share} of the text).', {
+              expected: lineSpacingLabel(settings.lineSpacing),
+              spacing: lineSpacingLabel(f.lineSpacing),
+              share: pct(f.lineSpacingShare),
+            }),
         group: 'format',
       });
     }
   }
 
   if (checks.margins) {
-    if (!f) out.push(docxOnly('margins', 'Margins'));
-    else if (!f.marginsCm) out.push({ id: 'margins', name: 'Margins', outcome: 'review', detail: 'Page margins were not found in the file.', group: 'format' });
+    if (!f) out.push(docxOnly('margins', t('Margins')));
+    else if (!f.marginsCm) out.push({ id: 'margins', name: t('Margins'), outcome: 'review', detail: t('Page margins were not found in the file.'), group: 'format' });
     else {
       const m = f.marginsCm;
       const sides: [string, number][] = [
@@ -140,29 +163,36 @@ export function runFormatChecks(input: FormatInput, settings: Settings): CheckRe
       const wrong = sides.filter(([, v]) => Math.abs(v - settings.marginsCm) > 0.1);
       out.push({
         id: 'margins',
-        name: 'Margins',
+        name: t('Margins'),
         outcome: wrong.length === 0 ? 'passed' : 'failed',
         detail:
           wrong.length === 0
-            ? `All margins are ${settings.marginsCm} cm.`
-            : `Expected ${settings.marginsCm} cm. Different: ${wrong.map(([s, v]) => `${s} ${v} cm`).join(', ')}.`,
+            ? t('All margins are {cm} cm.', { cm: settings.marginsCm })
+            : t('Expected {cm} cm. Different: {list}.', {
+                cm: settings.marginsCm,
+                list: wrong.map(([s, v]) => `${t(SIDE_LABEL[s] ?? s)} ${v} cm`).join(', '),
+              }),
         group: 'format',
       });
     }
   }
 
   if (checks.alignment) {
-    if (!f) out.push(docxOnly('alignment', 'Alignment'));
-    else if (!f.alignment) out.push({ id: 'alignment', name: 'Alignment', outcome: 'review', detail: 'The alignment could not be determined from the file.', group: 'format' });
+    if (!f) out.push(docxOnly('alignment', t('Alignment')));
+    else if (!f.alignment) out.push({ id: 'alignment', name: t('Alignment'), outcome: 'review', detail: t('The alignment could not be determined from the file.'), group: 'format' });
     else {
       const ok = f.alignment === settings.alignment;
       out.push({
         id: 'alignment',
-        name: 'Alignment',
+        name: t('Alignment'),
         outcome: ok ? (f.alignmentShare >= 0.9 ? 'passed' : 'review') : 'failed',
         detail: ok
-          ? `Body text is ${f.alignment}-aligned (${pct(f.alignmentShare)} of paragraphs).`
-          : `Expected ${settings.alignment}. Body text is ${f.alignment}-aligned (${pct(f.alignmentShare)} of paragraphs).`,
+          ? t('Body text is {align} ({share} of paragraphs).', { align: alignLabel(f.alignment), share: pct(f.alignmentShare) })
+          : t('Expected {expected}. Body text is {align} ({share} of paragraphs).', {
+              expected: alignLabel(settings.alignment),
+              align: alignLabel(f.alignment),
+              share: pct(f.alignmentShare),
+            }),
         group: 'format',
       });
     }
@@ -179,11 +209,15 @@ export function runFormatChecks(input: FormatInput, settings: Settings): CheckRe
     const badRange = minWords > maxWords;
     out.push({
       id: 'wordCount',
-      name: 'Word count',
+      name: t('Word count'),
       outcome: badRange ? 'review' : outcome,
       detail: badRange
-        ? `${words} words. The word range in Settings is not valid (minimum ${minWords} is greater than maximum ${maxWords}).`
-        : `${words} words (expected ${minWords}–${maxWords}).`,
+        ? t('{words} words. The word range in Settings is not valid (minimum {min} is greater than maximum {max}).', {
+            words,
+            min: minWords,
+            max: maxWords,
+          })
+        : t('{words} words (expected {min}–{max}).', { words, min: minWords, max: maxWords }),
       group: 'format',
     });
   }
@@ -191,11 +225,11 @@ export function runFormatChecks(input: FormatInput, settings: Settings): CheckRe
   if (checks.title) {
     const title = findTitle(paragraphs);
     if (f?.hasTitleStyle) {
-      out.push({ id: 'title', name: 'Title', outcome: 'passed', detail: 'A Title or Heading 1 style is applied.', group: 'format' });
+      out.push({ id: 'title', name: t('Title'), outcome: 'passed', detail: t('A Title or Heading 1 style is applied.'), group: 'format' });
     } else if (title) {
-      out.push({ id: 'title', name: 'Title', outcome: 'passed', detail: `Detected title: “${truncate(title, 90)}”.`, group: 'format' });
+      out.push({ id: 'title', name: t('Title'), outcome: 'passed', detail: t('Detected title: “{title}”.', { title: truncate(title, 90) }), group: 'format' });
     } else {
-      out.push({ id: 'title', name: 'Title', outcome: 'review', detail: 'No clear title or subject line was detected at the beginning.', group: 'format' });
+      out.push({ id: 'title', name: t('Title'), outcome: 'review', detail: t('No clear title or subject line was detected at the beginning.'), group: 'format' });
     }
   }
 
@@ -210,20 +244,22 @@ export function runFormatChecks(input: FormatInput, settings: Settings): CheckRe
       const ok = expected.includes(h.toLowerCase());
       out.push({
         id: 'references',
-        name: 'References section',
+        name: t('References section'),
         outcome: ok ? 'passed' : 'review',
-        detail: ok ? `“${h}” section found.` : `Found “${h}”; ${settings.citationStyle} uses “${expectedLabel}”.`,
+        detail: ok
+          ? t('“{heading}” section found.', { heading: h })
+          : t('Found “{heading}”; {style} uses “{expected}”.', { heading: h, style: settings.citationStyle, expected: expectedLabel }),
         group: 'format',
       });
     } else {
       out.push({
         id: 'references',
-        name: 'References section',
+        name: t('References section'),
         outcome: citations.length > 0 ? 'failed' : 'review',
         detail:
           citations.length > 0
-            ? `The text cites sources but has no “${expectedLabel}” section.`
-            : `No “${expectedLabel}” section found. Turn this check off if the assignment does not require sources.`,
+            ? t('The text cites sources but has no “{expected}” section.', { expected: expectedLabel })
+            : t('No “{expected}” section found. Turn this check off if the assignment does not require sources.', { expected: expectedLabel }),
         group: 'format',
       });
     }
@@ -233,25 +269,28 @@ export function runFormatChecks(input: FormatInput, settings: Settings): CheckRe
     const expected: CitationKind = styleToKind(settings.citationStyle);
     const ok = citations.filter((c) => c.kind === expected);
     const other = citations.filter((c) => c.kind !== expected);
-    const name = `In-text citations (${settings.citationStyle})`;
+    const name = t('In-text citations ({style})', { style: settings.citationStyle });
     const instances = citations.slice(0, 8).map((c) => `${c.text} — ${KIND_LABEL[c.kind]}`);
     if (citations.length === 0) {
       out.push({
         id: 'citations',
         name,
         outcome: 'review',
-        detail: `No in-text citations found. Expected format: ${CITATION_EXAMPLE[settings.citationStyle]}.`,
+        detail: t('No in-text citations found. Expected format: {example}.', { example: CITATION_EXAMPLE[settings.citationStyle] }),
         group: 'format',
       });
     } else if (other.length === 0) {
-      out.push({ id: 'citations', name, outcome: 'passed', detail: `${ok.length} citation(s) follow ${settings.citationStyle}.`, instances, group: 'format' });
+      out.push({ id: 'citations', name, outcome: 'passed', detail: tn(ok.length, '{n} citation follows {style}.', '{n} citations follow {style}.', { style: settings.citationStyle }), instances, group: 'format' });
     } else if (ok.length === 0) {
       const kinds = [...new Set(other.map((c) => KIND_LABEL[c.kind]))].join(' / ');
       out.push({
         id: 'citations',
         name,
         outcome: 'failed',
-        detail: `${other.length} citation(s) appear to use ${kinds}. Expected format: ${CITATION_EXAMPLE[settings.citationStyle]}.`,
+        detail: tn(other.length, '{n} citation appears to use {kinds}. Expected format: {example}.', '{n} citations appear to use {kinds}. Expected format: {example}.', {
+          kinds,
+          example: CITATION_EXAMPLE[settings.citationStyle],
+        }),
         instances,
         group: 'format',
       });
@@ -260,7 +299,11 @@ export function runFormatChecks(input: FormatInput, settings: Settings): CheckRe
         id: 'citations',
         name,
         outcome: 'review',
-        detail: `${ok.length} citation(s) follow ${settings.citationStyle}; ${other.length} use a different style.`,
+        detail: t('{ok} of {total} citations follow {style}; the rest use a different style.', {
+          ok: ok.length,
+          total: ok.length + other.length,
+          style: settings.citationStyle,
+        }),
         instances,
         group: 'format',
       });

@@ -1,21 +1,26 @@
 // Lectura de gráficas nativas de Word (word/charts/chartN.xml): tipo, título, series y valores.
 
+import { t, tk } from '../i18n';
 import type { ChartData } from './types';
 
 const TYPE_LABEL: Record<string, string> = {
-  'c:barChart': 'Bar chart',
-  'c:bar3DChart': 'Bar chart (3D)',
-  'c:lineChart': 'Line chart',
-  'c:line3DChart': 'Line chart (3D)',
-  'c:pieChart': 'Pie chart',
-  'c:pie3DChart': 'Pie chart (3D)',
-  'c:doughnutChart': 'Doughnut chart',
-  'c:areaChart': 'Area chart',
-  'c:area3DChart': 'Area chart (3D)',
-  'c:scatterChart': 'Scatter chart',
-  'c:radarChart': 'Radar chart',
-  'c:bubbleChart': 'Bubble chart',
+  // Se guardan en inglés y se muestran con t(tipo)
+  'c:barChart': tk('Bar chart'),
+  'c:bar3DChart': tk('Bar chart (3D)'),
+  'c:lineChart': tk('Line chart'),
+  'c:line3DChart': tk('Line chart (3D)'),
+  'c:pieChart': tk('Pie chart'),
+  'c:pie3DChart': tk('Pie chart (3D)'),
+  'c:doughnutChart': tk('Doughnut chart'),
+  'c:areaChart': tk('Area chart'),
+  'c:area3DChart': tk('Area chart (3D)'),
+  'c:scatterChart': tk('Scatter chart'),
+  'c:radarChart': tk('Radar chart'),
+  'c:bubbleChart': tk('Bubble chart'),
 };
+
+// Etiquetas que se forman al cambiar "Bar" por "Column" (para que tengan traducción)
+export const DERIVED_CHART_LABELS = [tk('Column chart'), tk('Column chart (3D)'), tk('Chart')];
 
 function child(el: Element | null | undefined, tag: string): Element | null {
   if (!el) return null;
@@ -63,7 +68,7 @@ export function parseChartXml(xml: string): ChartData | null {
   const series: ChartData['series'] = [];
   let categories: string[] = [];
   for (const ser of Array.from(plot.getElementsByTagName('c:ser'))) {
-    const name = richText(child(ser, 'c:tx')) ?? `Series ${series.length + 1}`;
+    const name = richText(child(ser, 'c:tx')) ?? t('Series {n}', { n: series.length + 1 });
     const cats = points(child(ser, 'c:cat') ?? child(ser, 'c:xVal'));
     if (cats.length > categories.length) categories = cats;
     const values = points(child(ser, 'c:val') ?? child(ser, 'c:yVal')).map((v) => Number(v));

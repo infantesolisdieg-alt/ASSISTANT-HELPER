@@ -3,6 +3,7 @@
 // pesar como máximo 1 MiB; por eso los datos detallados viajan como texto JSON y se recortan si es necesario.
 
 import { parseSettings, serializeSettings, type Settings } from '../settings';
+import type { Lang } from '../i18n';
 import type { DocItem, ReviewStatus, TeacherProfile } from '../types';
 
 /** Margen seguro por debajo de 1 MiB (un carácter acentuado ocupa más de un byte). */
@@ -109,7 +110,7 @@ export function fromCloud(id: string, r: CloudSubmission): DocItem {
 }
 
 export interface CloudAccount {
-  profile: { name: string; role: string; group: string };
+  profile: { name: string; role: string; group: string; lang?: Lang };
   settings: string;
   /** Términos aceptados (versión y fecha). */
   terms?: { version: string; acceptedAt: number };
@@ -121,6 +122,7 @@ export function accountToCloud(profile: TeacherProfile, settings: Settings): Clo
     settings: serializeSettings(settings),
   };
   // Firestore no acepta undefined: los términos solo se incluyen si ya se aceptaron
+  if (profile.lang) account.profile.lang = profile.lang;
   if (profile.termsVersion) account.terms = { version: profile.termsVersion, acceptedAt: profile.termsAcceptedAt ?? Date.now() };
   return account;
 }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { t } from '../i18n';
 import { docLabel, nextPending, useStore } from '../state/store';
 import { cleanGroup, groupsOf, type ReviewStatus } from '../types';
 import { AiBadge, EmptyState, Modal, OutcomeBadge, ReviewBadge, SimilarityBadge, kindLabel, percentText } from './common';
@@ -22,13 +23,14 @@ export function Review() {
       a?.similarity.ranges.map((r) => ({
         start: r.start,
         end: r.end,
-        title: `Matches: ${r.sources.map((s) => docLabel(docById(s))).join(', ')}`,
+        title: t('Matches: {list}', { list: r.sources.map((s) => docLabel(docById(s))).join(', ') }),
         sources: r.sources,
       })) ?? [],
     [a, docById],
   );
   const aiHighlights: Highlight[] = useMemo(
-    () => a?.ai?.sentences.map((s) => ({ start: s.start, end: s.end, title: `AI indicator: ${s.reasons.join('; ')}` })) ?? [],
+    () =>
+      a?.ai?.sentences.map((s) => ({ start: s.start, end: s.end, title: t('AI indicator: {reasons}', { reasons: s.reasons.join('; ') }) })) ?? [],
     [a],
   );
 
@@ -39,14 +41,14 @@ export function Review() {
     return (
       <div className="page">
         <EmptyState
-          title="Nothing to review yet"
+          title={t('Nothing to review yet')}
           actions={
             <button type="button" className="button button-primary" onClick={() => go('upload')}>
-              Upload files
+              {t('Upload files')}
             </button>
           }
         >
-          <p>Upload and analyze submissions to review them here.</p>
+          <p>{t('Upload and analyze submissions to review them here.')}</p>
         </EmptyState>
       </div>
     );
@@ -58,7 +60,7 @@ export function Review() {
       const { exportReport: run } = await import('../report/pdfReport');
       await run(doc, a, state.settings, (id) => docLabel(docById(id)), state.profile);
     } catch {
-      notify('The report could not be created. Please try again.');
+      notify(t('The report could not be created. Please try again.'));
     } finally {
       setExporting(false);
     }
@@ -76,13 +78,13 @@ export function Review() {
       <section className="review-header card">
         <div>
           <label className="field-label" htmlFor="submission-select">
-            Submission {index + 1} of {submissions.length}
+            {t('Submission {n} of {total}', { n: index + 1, total: submissions.length })}
           </label>
           <div className="submission-nav">
           <button
             type="button"
             className="icon-button nav-arrow"
-            aria-label="Previous submission"
+            aria-label={t('Previous submission')}
             disabled={!prev}
             onClick={() => prev && go('review', prev.id)}
           >
@@ -96,14 +98,15 @@ export function Review() {
           >
             {submissions.map((d) => (
               <option key={d.id} value={d.id}>
-                {d.studentName}{d.group ? ` (${d.group})` : ''} — {d.assignmentTitle} · {d.reviewStatus === 'pending' ? 'pending' : 'reviewed'}
+                {d.studentName}
+                {d.group ? ` (${d.group})` : ''} — {d.assignmentTitle} · {d.reviewStatus === 'pending' ? t('pending') : t('reviewed')}
               </option>
             ))}
           </select>
           <button
             type="button"
             className="icon-button nav-arrow"
-            aria-label="Next submission"
+            aria-label={t('Next submission')}
             disabled={!nextDoc}
             onClick={() => nextDoc && go('review', nextDoc.id)}
           >
@@ -112,20 +115,24 @@ export function Review() {
           </div>
           <div className="small muted-text review-meta">
             <label className="group-edit">
-              <span>Group</span>
+              <span>{t('Group')}</span>
               <input
                 key={doc.id}
                 className="input input-inline"
                 list="review-groups"
                 defaultValue={doc.group}
-                placeholder="Add group"
-                aria-label={`Group for ${doc.studentName}`}
+                placeholder={t('Add group')}
+                aria-label={t('Group for {name}', { name: doc.studentName })}
                 onBlur={(e) => {
                   const g = cleanGroup(e.target.value);
                   e.target.value = g;
                   if (g !== doc.group) {
                     dispatch({ type: 'updateDoc', id: doc.id, patch: { group: g } });
-                    notify(g ? `${doc.studentName} moved to ${g}.` : `Group removed for ${doc.studentName}.`);
+                    notify(
+                      g
+                        ? t('{name} moved to {group}.', { name: doc.studentName, group: g })
+                        : t('Group removed for {name}.', { name: doc.studentName }),
+                    );
                   }
                 }}
                 onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
@@ -137,17 +144,17 @@ export function Review() {
               </datalist>
             </label>
             <span>
-              {doc.fileName} · {kindLabel(doc.kind)} · {a.wordCount} words
+              {doc.fileName} · {kindLabel(doc.kind)} · {t('{n} words', { n: a.wordCount })}
             </span>
             <ReviewBadge status={doc.reviewStatus} />
           </div>
         </div>
         <div className="button-row">
           <button type="button" className="button button-secondary" onClick={exportReport} disabled={exporting}>
-            <Icon name="download" size={16} /> {exporting ? 'Preparing PDF…' : 'Export report'}
+            <Icon name="download" size={16} /> {exporting ? t('Preparing PDF…') : t('Export report')}
           </button>
           <button type="button" className="button button-primary" onClick={() => setCompleting(true)}>
-            <Icon name="check" size={16} /> Complete review
+            <Icon name="check" size={16} /> {t('Complete review')}
           </button>
         </div>
       </section>
@@ -183,21 +190,21 @@ export function Review() {
           summary={
             <dl className="summary-list">
               <div>
-                <dt>Student</dt>
+                <dt>{t('Student')}</dt>
                 <dd>{doc.studentName}</dd>
               </div>
               <div>
-                <dt>Assignment</dt>
+                <dt>{t('Assignment')}</dt>
                 <dd>{doc.assignmentTitle}</dd>
               </div>
               <div>
-                <dt>Similarity</dt>
+                <dt>{t('Similarity')}</dt>
                 <dd>
                   {percentText(a.similarity.percent)} <SimilarityBadge status={a.status} />
                 </dd>
               </div>
               <div>
-                <dt>Format &amp; writing</dt>
+                <dt>{t('Format & writing')}</dt>
                 <dd>
                   {failed > 0 && (
                     <>
@@ -213,11 +220,11 @@ export function Review() {
                 </dd>
               </div>
               <div>
-                <dt>AI indicators</dt>
-                <dd>{a.ai ? <><span>{a.ai.percent}%</span> <AiBadge level={a.ai.level} /></> : 'Off'}</dd>
+                <dt>{t('AI indicators')}</dt>
+                <dd>{a.ai ? <><span>{a.ai.percent}%</span> <AiBadge level={a.ai.level} /></> : t('Off')}</dd>
               </div>
               <div>
-                <dt>Teacher notes</dt>
+                <dt>{t('Teacher notes')}</dt>
                 <dd>{doc.notes.length}</dd>
               </div>
             </dl>
@@ -231,10 +238,10 @@ export function Review() {
               doc.id,
             );
             if (next) {
-              notify(`Review saved for ${doc.studentName}. Next: ${next.studentName}.`);
+              notify(t('Review saved for {name}. Next: {next}.', { name: doc.studentName, next: next.studentName }));
               go('review', next.id);
             } else {
-              notify(`Review saved for ${doc.studentName}. All submissions have been reviewed.`);
+              notify(t('Review saved for {name}. All submissions have been reviewed.', { name: doc.studentName }));
               go('dashboard');
             }
           }}
@@ -262,13 +269,13 @@ function CompleteReviewModal({
 
   return (
     <Modal
-      title="Complete review"
+      title={t('Complete review')}
       onClose={onClose}
       wide
       footer={
         <>
           <button type="button" className="button button-secondary" onClick={onClose}>
-            Cancel
+            {t('Cancel')}
           </button>
           <button
             type="button"
@@ -276,28 +283,28 @@ function CompleteReviewModal({
             disabled={!decision}
             onClick={() => decision && onConfirm(decision, comment.trim())}
           >
-            Confirm and continue
+            {t('Confirm and continue')}
           </button>
         </>
       }
     >
       {summary}
       <label className="field-label" htmlFor="final-comment">
-        Final comment
+        {t('Final comment')}
       </label>
       <textarea
         id="final-comment"
         className="input textarea"
         rows={4}
         value={comment}
-        placeholder="Feedback for the student…"
+        placeholder={t('Feedback for the student…')}
         onChange={(e) => setComment(e.target.value)}
       />
       <fieldset className="decision">
-        <legend className="field-label">Decision</legend>
+        <legend className="field-label">{t('Decision')}</legend>
         <label className="radio">
           <input type="radio" name="decision" checked={decision === 'approved'} onChange={() => setDecision('approved')} />
-          Approved
+          {t('Approved')}
         </label>
         <label className="radio">
           <input
@@ -306,7 +313,7 @@ function CompleteReviewModal({
             checked={decision === 'needs-corrections'}
             onChange={() => setDecision('needs-corrections')}
           />
-          Needs corrections
+          {t('Needs corrections')}
         </label>
       </fieldset>
     </Modal>

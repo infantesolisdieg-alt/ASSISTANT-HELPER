@@ -17,15 +17,16 @@ inglés: similitud entre entregas (shingles de 5 palabras, solo contra archivos 
 validación de formato (.docx: fuente, tamaño, interlineado, márgenes, alineación; todos: palabras,
 título, referencias, citas APA/MLA/Chicago), calidad de redacción (voz pasiva, oraciones > 35
 palabras, palabras repetidas) e indicadores heurísticos de IA (siempre con aviso de que son
-orientativos). Interfaz 100 % en inglés; comentarios del código en español.
+orientativos). Interfaz bilingüe inglés/español (desde v1.8); comentarios del código en español.
 
 ## Reglas que no se deben romper
 
 - Sin backend propio ni servicios de pago. El análisis se hace en el navegador. Desde v1.4 hay nube opcional (Firebase Spark, gratis) solo para guardar datos de cada cuenta.
 - Sin cuenta: nada se guarda (memoria). Con cuenta de Google: texto, resultados, grupos, perfil y configuración se guardan en Firestore del usuario; los archivos originales nunca se suben.
 - No comparar contra internet. No offline/service worker. No soporte para celular: en < 1024 px
-  se muestra "Assistant Helper is available on desktop computers only."
-- `<html lang="en" translate="no">` + `<meta name="google" content="notranslate">`.
+  se muestra "ASSISTANT HELPER is available on desktop computers only." (o su versión en español).
+- **El nombre de la app nunca se traduce y siempre va en MAYÚSCULAS: `APP_NAME` = "ASSISTANT HELPER"** (src/i18n). Todo texto visible pasa por `t()`.
+- `<html translate="no">` + `<meta name="google" content="notranslate">`; el atributo `lang` cambia con el idioma elegido.
 - Estilo formal en tonos de rojo (#8B1E2D, #4A0D16, #F6E7E9…), serif Libre Baskerville para
   títulos y Source Sans 3 para la interfaz. Contraste ≥ 4.5:1, ningún texto < 12 px.
 
@@ -55,6 +56,7 @@ orientativos). Interfaz 100 % en inglés; comentarios del código en español.
 - **Términos y privacidad (v1.7, 2026-11-20, probado por el usuario en el sitio publicado con Google y Drive):** el usuario pidió términos al inicio sobre el uso de la cuenta de Google y Drive. Texto en `public/terms.html` (página pública https://assistant-helper-pi.vercel.app/terms.html, también se muestra en la app con iframe; se puede poner en la pantalla de permisos de Google Cloud). Versión en `src/terms.ts` (`TERMS_VERSION`): si cambia, la app vuelve a pedir la aceptación. Bienvenida: casilla obligatoria para Google, sin cuenta y demo. Cuentas sin la versión actual ven `TermsGate` (aceptar o salir). La aceptación se guarda en `users/{uid}.terms`. Settings → "Privacy and terms": leer términos, administrar acceso de Google y "Delete my saved data" (`deleteAccountData`).
 - **Selector de Drive (v1.7):** el contenido del Google Picker es un iframe de Google y no se puede rediseñar; se cambió lo posible: vista de lista (las miniaturas salían vacías con drive.file), pestaña Starred, título, fondo y marco rojo (`.picker-dialog` en styles.css) y un letrero de la app encima (`showBanner` en drive.ts).
 - Corregido: regex sin barra en Settings (`/s+/` quitaba las "s" del nombre, "Solis" → "Soli").
+- **Idioma inglés/español (v1.8, 2026-11-20):** el usuario pidió elegir idioma al registrarse, traducir todo según la opción, nunca traducir el título y ponerlo en mayúsculas en todos lados, y que el texto del login cambie solo entre español e inglés. Sistema propio sin librerías en `src/i18n/`: `t('texto en inglés', {vars})` (el inglés es la clave), `tn(n, singular, plural)`, `tk()` para listas fijas, `tRich()` para oraciones con <strong>, `tIn(lang, …)`; diccionario `es.ts` (formal, "usted"). La prueba `i18n.test.ts` falla si un texto de t()/tk()/tn() no tiene traducción. El idioma vive en el estado (`state.lang`, primera visita = idioma del navegador) y con cuenta se guarda en `users/{uid}.profile.lang`; sin cuenta solo en memoria. Se cambia en la bienvenida (English/Español) y en Configuración → Su perfil → Idioma. Los análisis se recalculan al cambiar de idioma. La bienvenida dibuja las dos versiones del texto encimadas y alterna cada 6 s con fundido y palabras escalonadas (botón de pausa; con "reducir movimiento" solo fundido). Términos en español: `public/terms-es.html` (mantenerlo igual que terms.html). El selector de Google Drive usa `setLocale` con el idioma. Los ejemplos de títulos de figuras ("Table 1") siguen en inglés porque es el idioma del documento del alumno.
 - Avisar a la Product Owner: la bienvenida no es un login real y las animaciones son discretas.
 
 ## Estructura
@@ -72,7 +74,7 @@ src/samples.ts       5 entregas de ejemplo (dos cartas comparten párrafos; el m
 
 ## Comandos
 
-- `npm run dev` (http://localhost:5173), `npm test` (Vitest, 55 pruebas), `npm run build`.
+- `npm run dev` (http://localhost:5173), `npm test` (Vitest, 58 pruebas), `npm run build`.
 - En PowerShell de Claude, Node y Git se instalaron con winget en esta máquina; si un comando
   no los encuentra, refrescar el PATH:
   `$env:Path = [Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [Environment]::GetEnvironmentVariable("Path","User")`

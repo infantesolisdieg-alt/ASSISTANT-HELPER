@@ -1,4 +1,5 @@
 import type { DocBlock, DocxFormat, FigureInfo, FileKind, PageLayout, TableInfo } from './extract/types';
+import { tk, type Lang } from './i18n';
 
 export type ReviewStatus = 'pending' | 'approved' | 'needs-corrections';
 
@@ -14,11 +15,13 @@ export interface TeacherProfile {
   /** Versión de los términos que aceptó (ver src/terms.ts) y cuándo. */
   termsVersion?: string;
   termsAcceptedAt?: number;
+  /** Idioma elegido (inglés o español). */
+  lang?: Lang;
 }
 
 export const DEMO_PROFILE: TeacherProfile = {
   name: 'Nalleli Olvera Castelan',
-  role: 'Teacher · Bilingual Executive Secretary',
+  role: tk('Teacher · Bilingual Executive Secretary'),
   group: '',
 };
 
@@ -78,10 +81,11 @@ export interface DocItem {
   notes: Note[];
 }
 
+/** Se muestran con t(REVIEW_LABEL[estado]). */
 export const REVIEW_LABEL: Record<ReviewStatus, string> = {
-  pending: 'Pending',
-  approved: 'Approved',
-  'needs-corrections': 'Needs corrections',
+  pending: tk('Pending'),
+  approved: tk('Approved'),
+  'needs-corrections': tk('Needs corrections'),
 };
 
 /** Libera las URLs temporales de un documento (el archivo original y sus imágenes). */
@@ -93,7 +97,8 @@ export function releaseDoc(d: DocItem): void {
   for (const f of d.figures ?? []) if (f.src) URL.revokeObjectURL(f.src);
 }
 
-export const NO_GROUP = 'No group';
+/** Clave interna de los documentos sin grupo; se muestra con t(NO_GROUP). */
+export const NO_GROUP = tk('No group');
 
 /** Nombre del grupo para mostrar (los vacíos se agrupan como "No group"). */
 export function groupLabel(group: string | undefined): string {

@@ -3,6 +3,7 @@
 // Lee word/document.xml, word/styles.xml, word/theme/theme1.xml, las relaciones y los medios.
 // Herencia de formato: docDefaults → estilo de párrafo (basedOn) → pPr directo → estilo de carácter → rPr directo.
 
+import { t } from '../i18n';
 import JSZip from 'jszip';
 import type { Alignment } from '../settings';
 import { parseChartXml } from './chart';
@@ -148,7 +149,7 @@ export function parseDocxXml(
 } {
   const parser = new DOMParser();
   const doc = parser.parseFromString(documentXml, 'application/xml');
-  if (doc.getElementsByTagName('parsererror').length) throw new Error('The .docx file is damaged (invalid document.xml).');
+  if (doc.getElementsByTagName('parsererror').length) throw new Error(t('The .docx file is damaged (invalid document.xml).'));
 
   // Fuentes del tema
   const themeFonts: { major?: string; minor?: string } = {};
@@ -208,7 +209,7 @@ export function parseDocxXml(
   };
 
   const body = doc.getElementsByTagName('w:body')[0];
-  if (!body) throw new Error('The .docx file has no document body.');
+  if (!body) throw new Error(t('The .docx file has no document body.'));
 
   const paragraphs: string[] = [];
   const blocks: DocBlock[] = [];
@@ -411,10 +412,10 @@ export async function readDocx(buffer: ArrayBuffer): Promise<ExtractedFile> {
   try {
     zip = await JSZip.loadAsync(buffer);
   } catch {
-    throw new Error('This file is not a valid .docx document.');
+    throw new Error(t('This file is not a valid .docx document.'));
   }
   const documentXml = await zip.file('word/document.xml')?.async('string');
-  if (!documentXml) throw new Error('This .docx file has no word/document.xml.');
+  if (!documentXml) throw new Error(t('This .docx file has no word/document.xml.'));
   const stylesXml = (await zip.file('word/styles.xml')?.async('string')) ?? null;
   const themeXml = (await zip.file('word/theme/theme1.xml')?.async('string')) ?? null;
   const relsXml = (await zip.file('word/_rels/document.xml.rels')?.async('string')) ?? null;

@@ -1,5 +1,6 @@
 // Reglas personalizadas definidas por la docente (complementos al análisis).
 
+import { t, tn } from '../i18n';
 import { ruleLabel, type CustomRule } from '../settings';
 import { splitParagraphs } from './text';
 import type { CheckResult } from './types';
@@ -22,7 +23,7 @@ export function runCustomRules(text: string, rules: CustomRule[]): CheckResult[]
         id: rule.id,
         name,
         outcome: count >= min ? 'passed' : 'failed',
-        detail: `${count} paragraph(s) found (minimum ${min}).`,
+        detail: tn(count, '{n} paragraph found (minimum {min}).', '{n} paragraphs found (minimum {min}).', { min }),
         group: 'custom',
       };
     }
@@ -32,7 +33,9 @@ export function runCustomRules(text: string, rules: CustomRule[]): CheckResult[]
       id: rule.id,
       name,
       outcome: passed ? 'passed' : 'failed',
-      detail: found ? `“${rule.value}” was found in the text.` : `“${rule.value}” was not found in the text.`,
+      detail: found
+        ? t('“{value}” was found in the text.', { value: rule.value })
+        : t('“{value}” was not found in the text.', { value: rule.value }),
       group: 'custom',
     };
   });

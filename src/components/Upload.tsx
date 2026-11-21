@@ -5,6 +5,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { driveEnabled, type PickedFile } from '../cloud/drive';
 import { ACCEPTED_EXTENSIONS, MAX_FILE_MB, extractFile, fileKind, needsSourceUrl } from '../extract';
 import { paragraphRanges } from '../extract/types';
+import { APP_NAME, t, tn } from '../i18n';
+import { tRich } from '../i18n/rich';
 import { newId, useStore } from '../state/store';
 import { cleanGroup, groupsOf, type DocItem } from '../types';
 import { Icon } from './icons';
@@ -125,7 +127,7 @@ export function Upload() {
     dispatch({
       type: 'updateDoc',
       id,
-      patch: { state: 'error', progress: undefined, error: err instanceof Error ? err.message : 'The file could not be read.' },
+      patch: { state: 'error', progress: undefined, error: err instanceof Error ? err.message : t('The file could not be read.') },
     });
 
   const readInto = async (item: DocItem, file: File, offset = 0) => {
@@ -151,8 +153,8 @@ export function Upload() {
           progress: undefined,
           error:
             item.kind === 'image' || item.kind === 'pdf'
-              ? 'No readable text was found, even with text recognition.'
-              : 'The file does not contain any text.',
+              ? t('No readable text was found, even with text recognition.')
+              : t('The file does not contain any text.'),
         },
       });
       return;
@@ -189,7 +191,7 @@ export function Upload() {
     text: '',
     sourceUrl,
     state: 'reading',
-    progress: { label: 'Waiting…', value: 0 },
+    progress: { label: t('Waiting…'), value: 0 },
     analyzed: false,
     reviewStatus: 'pending',
     finalComment: '',
@@ -204,10 +206,10 @@ export function Upload() {
     const problems: string[] = [];
     const good: File[] = [];
     for (const f of Array.from(files)) {
-      if (!fileKind(f.name)) problems.push(`${f.name}: only Word, PDF, text and image files are supported.`);
-      else if (f.size > MAX_FILE_MB * 1024 * 1024) problems.push(`${f.name}: the file is larger than ${MAX_FILE_MB} MB.`);
+      if (!fileKind(f.name)) problems.push(t('{name}: only Word, PDF, text and image files are supported.', { name: f.name }));
+      else if (f.size > MAX_FILE_MB * 1024 * 1024) problems.push(t('{name}: the file is larger than {mb} MB.', { name: f.name, mb: MAX_FILE_MB }));
       else if (isDuplicate(f.name, f.size) || good.some((g) => g.name === f.name && g.size === f.size))
-        problems.push(`${f.name}: this file is already loaded.`);
+        problems.push(t('{name}: this file is already loaded.', { name: f.name }));
       else good.push(f);
     }
     setRejected(problems);
@@ -220,7 +222,7 @@ export function Upload() {
   /* ---------- Desde Google Drive ---------- */
   const fromDrive = async () => {
     setDriveBusy(true);
-    setDriveStatus('Opening Google Drive…');
+    setDriveStatus(t('Opening Google Drive…'));
     try {
       const drive = await import('../cloud/drive');
       const { picked, token } = await drive.chooseFromDrive(state.profile?.email);
@@ -230,28 +232,28 @@ export function Upload() {
         const why = drive.driveProblem(f);
         const name = drive.downloadName(f);
         if (why) problems.push(why);
-        else if (isDuplicate(name, f.sizeBytes)) problems.push(`${name}: this file is already loaded.`);
+        else if (isDuplicate(name, f.sizeBytes)) problems.push(t('{name}: this file is already loaded.', { name }));
         else good.push({ f, item: newItem(name, f.sizeBytes, 'drive') });
       }
       setRejected(problems);
       if (!good.length) return;
       // Las filas aparecen enseguida y cada una muestra su descarga y su lectura
-      addRows(good.map((g) => ({ ...g.item, progress: { label: 'Waiting to download…', value: 0 } })));
-      notify(`${good.length} file${good.length === 1 ? '' : 's'} added from Google Drive.`);
+      addRows(good.map((g) => ({ ...g.item, progress: { label: t('Waiting to download…'), value: 0 } })));
+      notify(tn(good.length, '{n} file added from Google Drive.', '{n} files added from Google Drive.'));
       good.forEach(({ f, item }) =>
         limit(async () => {
           if (!alive(item.id)) return;
           const report = progressFor(item.id, 0, 0.4);
-          report('Downloading from Google Drive…', 0);
+          report(t('Downloading from Google Drive…'), 0);
           const file = await drive.downloadDriveFile(f, token, (p) =>
-            report(`Downloading from Google Drive (${Math.round(p * 100)}%)…`, p),
+            report(t('Downloading from Google Drive ({p}%)…', { p: Math.round(p * 100) }), p),
           );
           await readInto(item, file, 0.4);
         }).catch((err) => fail(item.id, err)),
       );
     } catch (e) {
       const { DriveCancelled } = await import('../cloud/drive');
-      if (!(e instanceof DriveCancelled)) setRejected([e instanceof Error ? e.message : 'Google Drive could not be opened.']);
+      if (!(e instanceof DriveCancelled)) setRejected([e instanceof Error ? e.message : t('Google Drive could not be opened.')]);
     } finally {
       setDriveBusy(false);
       setDriveStatus('');
@@ -282,11 +284,11 @@ export function Upload() {
   const canAnalyze = ready.length > 0 && readingCount === 0 && missingName.length === 0 && hasSubmission;
 
   let reason = '';
-  if (!staged.length) reason = 'Add files to start.';
-  else if (readingCount) reason = `Waiting for ${readingCount} file${readingCount === 1 ? '' : 's'} to finish…`;
-  else if (!ready.length) reason = 'None of the files could be read.';
-  else if (missingName.length) reason = `Enter the student name for ${missingName.length} file${missingName.length === 1 ? '' : 's'}.`;
-  else if (!hasSubmission) reason = 'Add at least one student submission (not only reference files).';
+  if (!staged.length) reason = t('Add files to start.');
+  else if (readingCount) reason = tn(readingCount, 'Waiting for {n} file to finish…', 'Waiting for {n} files to finish…');
+  else if (!ready.length) reason = t('None of the files could be read.');
+  else if (missingName.length) reason = tn(missingName.length, 'Enter the student name for {n} file.', 'Enter the student name for {n} files.');
+  else if (!hasSubmission) reason = t('Add at least one student submission (not only reference files).');
 
   const focusFirstMissing = () => {
     const el = document.querySelector<HTMLInputElement>('.upload-table input.input-invalid');
@@ -298,7 +300,7 @@ export function Upload() {
     const g = cleanGroup(bulkGroup);
     const targets = staged.filter((d) => !d.isReference);
     targets.forEach((d) => dispatch({ type: 'updateDoc', id: d.id, patch: { group: g } }));
-    notify(g ? `Group “${g}” applied to ${targets.length} file(s).` : 'Group removed from all files.');
+    notify(g ? tn(targets.length, 'Group “{group}” applied to {n} file.', 'Group “{group}” applied to {n} files.', { group: g }) : t('Group removed from all files.'));
   };
 
   const analyze = () => {
@@ -308,8 +310,12 @@ export function Upload() {
     failed.forEach((d) => dispatch({ type: 'removeDoc', id: d.id }));
     dispatch({ type: 'analyzeStaged' });
     notify(
-      `Analysis complete: ${subs} submission${subs === 1 ? '' : 's'}${refs ? ` and ${refs} reference file${refs === 1 ? '' : 's'}` : ''}` +
-        (failed.length ? ` (${failed.length} unreadable file${failed.length === 1 ? '' : 's'} skipped).` : '.'),
+      t('Analysis complete: {items}.', {
+        items:
+          tn(subs, '{n} submission', '{n} submissions') +
+          (refs ? ' ' + tn(refs, 'and {n} reference file', 'and {n} reference files') : '') +
+          (failed.length ? ' ' + tn(failed.length, '({n} unreadable file skipped)', '({n} unreadable files skipped)') : ''),
+      }),
     );
     go('dashboard');
   };
@@ -321,12 +327,12 @@ export function Upload() {
       <section className="card upload-hero">
         <div className="upload-head">
           <div>
-            <h2>Add submissions</h2>
+            <h2>{t('Add submissions')}</h2>
             <p className="muted-text">
-              Files are read in your browser.{' '}
+              {t('Files are read in your browser.')}{' '}
               {state.profile?.uid
-                ? 'When you press Analyze, the text and results are saved to your Google account (the original files are not uploaded).'
-                : 'Nothing is sent to a server.'}
+                ? t('When you press Analyze, the text and results are saved to your Google account (the original files are not uploaded).')
+                : t('Nothing is sent to a server.')}
             </p>
           </div>
         </div>
@@ -336,7 +342,7 @@ export function Upload() {
             className={`dropzone dropzone-large${dragging ? ' dragging' : ''}`}
             role="button"
             tabIndex={0}
-            aria-label="Add files: drop them here or press Enter to choose files from this computer"
+            aria-label={t('Add files: drop them here or press Enter to choose files from this computer')}
             onClick={openPicker}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -364,16 +370,23 @@ export function Upload() {
             <span className="dropzone-icon">
               <Icon name="upload" size={30} />
             </span>
-            <p className="dropzone-title">{dragging ? 'Drop the files to add them' : 'Drag and drop files here'}</p>
+            <p className="dropzone-title">{dragging ? t('Drop the files to add them') : t('Drag and drop files here')}</p>
             <p className="muted-text small">
-              or <span className="link-like">click to browse</span> · <kbd>Ctrl</kbd> + <kbd>V</kbd> to paste
+              {tRich('or {browse} · {keys} to paste', {
+                browse: <span className="link-like">{t('click to browse')}</span>,
+                keys: (
+                  <>
+                    <kbd>Ctrl</kbd> + <kbd>V</kbd>
+                  </>
+                ),
+              })}
             </p>
-            <ul className="format-chips" aria-label="Accepted formats">
+            <ul className="format-chips" aria-label={t('Accepted formats')}>
               {['DOCX', 'PDF', 'TXT', 'PNG', 'JPG', 'WEBP'].map((f) => (
                 <li key={f}>{f}</li>
               ))}
             </ul>
-            <p className="small muted-text">Up to {MAX_FILE_MB} MB per file · scanned PDFs and images are read with OCR</p>
+            <p className="small muted-text">{t('Up to {mb} MB per file · scanned PDFs and images are read with OCR', { mb: MAX_FILE_MB })}</p>
             <input
               ref={inputRef}
               type="file"
@@ -393,11 +406,11 @@ export function Upload() {
           <div className="source-list">
             <SourceCard
               icon={<Icon name="upload" size={22} />}
-              title="This computer"
-              text="Word, PDF, text or image files saved on this computer."
+              title={t('This computer')}
+              text={t('Word, PDF, text or image files saved on this computer.')}
               action={
                 <button type="button" className="button button-primary" onClick={openPicker}>
-                  Choose files
+                  {t('Choose files')}
                 </button>
               }
             />
@@ -405,18 +418,18 @@ export function Upload() {
               <SourceCard
                 icon={<DriveLogo size={24} />}
                 title="Google Drive"
-                text="My Drive, files shared with you and shared drives. Google Docs become Word files."
+                text={t('My Drive, files shared with you and shared drives. Google Docs become Word files.')}
                 action={
                   <button type="button" className="button button-secondary drive-button" onClick={fromDrive} disabled={driveBusy}>
                     {driveBusy ? <span className="spinner" aria-hidden="true" /> : <DriveLogo size={16} />}
-                    {driveBusy ? driveStatus || 'Waiting for Google Drive…' : 'Choose from Drive'}
+                    {driveBusy ? driveStatus || t('Waiting for Google Drive…') : t('Choose from Drive')}
                   </button>
                 }
                 note={
                   <>
-                    Assistant Helper can only open the files you choose.{' '}
+                    {t('{app} can only open the files you choose.', { app: APP_NAME })}{' '}
                     <button type="button" className="inline-link" onClick={() => setShowTerms(true)}>
-                      How Drive data is used
+                      {t('How Drive data is used')}
                     </button>
                   </>
                 }
@@ -428,16 +441,14 @@ export function Upload() {
         {rejected.length > 0 && (
           <div className="alert alert-bad alert-dismissible" role="alert">
             <div>
-              <strong>
-                {rejected.length} file{rejected.length === 1 ? ' was' : 's were'} not added.
-              </strong>
+              <strong>{tn(rejected.length, '{n} file was not added.', '{n} files were not added.')}</strong>
               <ul className="alert-list">
                 {rejected.map((r) => (
                   <li key={r}>{r}</li>
                 ))}
               </ul>
             </div>
-            <button type="button" className="icon-button alert-close" aria-label="Dismiss message" onClick={() => setRejected([])}>
+            <button type="button" className="icon-button alert-close" aria-label={t('Dismiss message')} onClick={() => setRejected([])}>
               ×
             </button>
           </div>
@@ -448,32 +459,33 @@ export function Upload() {
         <div className="card-header">
           <div>
             <h2>
-              Files to analyze {staged.length > 0 && <span className="count-pill">{staged.length}</span>}
+              {t('Files to analyze')} {staged.length > 0 && <span className="count-pill">{staged.length}</span>}
             </h2>
             <p className="muted-text small">
-              Check the student name, group and assignment title. Mark source texts as <strong>Reference</strong> to compare
-              against them.
+              {tRich('Check the student name, group and assignment title. Mark source texts as {reference} to compare against them.', {
+                reference: <strong>{t('Reference')}</strong>,
+              })}
             </p>
           </div>
           {staged.length > 0 && (
-            <div className="status-chips" aria-label="File status">
+            <div className="status-chips" aria-label={t('File status')}>
               <span className="status-chip chip-ok">
-                <Icon name="check" size={14} /> {ready.length} ready
+                <Icon name="check" size={14} /> {t('{n} ready', { n: ready.length })}
               </span>
               {readingCount > 0 && (
                 <span className="status-chip chip-neutral">
-                  <span className="spinner" aria-hidden="true" /> {readingCount} in progress
+                  <span className="spinner" aria-hidden="true" /> {t('{n} in progress', { n: readingCount })}
                 </span>
               )}
               {failed.length > 0 && (
                 <span className="status-chip chip-bad">
-                  <Icon name="alert" size={14} /> {failed.length} failed
+                  <Icon name="alert" size={14} /> {t('{n} failed', { n: failed.length })}
                   <button
                     type="button"
                     className="button button-link chip-action"
                     onClick={() => failed.forEach((d) => dispatch({ type: 'removeDoc', id: d.id }))}
                   >
-                    Remove
+                    {t('Remove')}
                   </button>
                 </span>
               )}
@@ -483,10 +495,16 @@ export function Upload() {
 
         {staged.length > 0 && (
           <div className="list-toolbar">
-            <SearchBox id="upload-search" value={query} onChange={setQuery} label="Search files" placeholder="Search by file, student or group…" />
+            <SearchBox
+              id="upload-search"
+              value={query}
+              onChange={setQuery}
+              label={t('Search files')}
+              placeholder={t('Search by file, student or group…')}
+            />
             <div className="bulk-group">
               <label className="field-label" htmlFor="bulk-group">
-                Group for all files
+                {t('Group for all files')}
               </label>
               <div className="inline-fields">
                 <input
@@ -494,12 +512,12 @@ export function Upload() {
                   className="input"
                   list="group-options"
                   value={bulkGroup}
-                  placeholder="e.g. 5A"
+                  placeholder={t('e.g. 5A')}
                   onChange={(e) => setBulkGroup(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && applyGroupToAll()}
                 />
                 <button type="button" className="button button-secondary" onClick={applyGroupToAll}>
-                  Apply to all
+                  {t('Apply to all')}
                 </button>
               </div>
             </div>
@@ -516,11 +534,13 @@ export function Upload() {
             <span className="empty-icon">
               <Icon name="inbox" size={28} />
             </span>
-            <p className="strong">No files yet</p>
+            <p className="strong">{t('No files yet')}</p>
             <p className="muted-text small">
-              Add student work from this computer{driveEnabled ? ' or Google Drive' : ''}. Each file appears here so you can check
-              its details before analyzing.
-              {submissions.length > 0 && ` ${submissions.length} submission(s) are already analyzed in this session.`}
+              {driveEnabled
+                ? t('Add student work from this computer or Google Drive. Each file appears here so you can check its details before analyzing.')
+                : t('Add student work from this computer. Each file appears here so you can check its details before analyzing.')}
+              {submissions.length > 0 &&
+                ' ' + tn(submissions.length, '{n} submission is already analyzed in this session.', '{n} submissions are already analyzed in this session.')}
             </p>
           </div>
         ) : (
@@ -528,13 +548,13 @@ export function Upload() {
             <table className="table upload-table">
               <thead>
                 <tr>
-                  <th scope="col">File</th>
-                  <th scope="col">Student name</th>
-                  <th scope="col">Group</th>
-                  <th scope="col">Assignment title</th>
-                  <th scope="col">Reference</th>
+                  <th scope="col">{t('File')}</th>
+                  <th scope="col">{t('Student name')}</th>
+                  <th scope="col">{t('Group')}</th>
+                  <th scope="col">{t('Assignment title')}</th>
+                  <th scope="col">{t('Reference')}</th>
                   <th scope="col">
-                    <span className="sr-only">Actions</span>
+                    <span className="sr-only">{t('Actions')}</span>
                   </th>
                 </tr>
               </thead>
@@ -542,7 +562,7 @@ export function Upload() {
                 {visible.length === 0 && (
                   <tr>
                     <td colSpan={6} className="empty-inline">
-                      No files match “{query}”.
+                      {t('No files match “{q}”.', { q: query })}
                     </td>
                   </tr>
                 )}
@@ -559,7 +579,7 @@ export function Upload() {
                             </span>
                           )}
                           {d.source === 'drive' && (
-                            <span className="file-source" title="From Google Drive">
+                            <span className="file-source" title={t('From Google Drive')}>
                               <DriveLogo size={12} />
                             </span>
                           )}
@@ -572,7 +592,7 @@ export function Upload() {
                             {d.state === 'reading' ? (
                               <span className="file-progress" role="status">
                                 <span className="spinner" aria-hidden="true" />
-                                <span>{d.progress?.label ?? 'Reading…'}</span>
+                                <span>{d.progress?.label ?? t('Reading…')}</span>
                                 <span className="progress-bar" aria-hidden="true">
                                   <span style={{ width: `${Math.round((d.progress?.value ?? 0) * 100)}%` }} />
                                 </span>
@@ -583,10 +603,10 @@ export function Upload() {
                               </span>
                             ) : (
                               <span className="text-ok">
-                                <Icon name="check" size={14} /> Ready · {d.text.split(/\s+/).filter(Boolean).length} words
-                                {d.pages && d.kind === 'pdf' ? ` · ${d.pages.length} page${d.pages.length === 1 ? '' : 's'}` : ''}
-                                {d.tables?.length ? ` · ${d.tables.length} table${d.tables.length === 1 ? '' : 's'}` : ''}
-                                {d.figures?.length ? ` · ${d.figures.length} figure${d.figures.length === 1 ? '' : 's'}` : ''}
+                                <Icon name="check" size={14} /> {t('Ready')} · {t('{n} words', { n: d.text.split(/\s+/).filter(Boolean).length })}
+                                {d.pages && d.kind === 'pdf' ? ` · ${tn(d.pages.length, '{n} page', '{n} pages')}` : ''}
+                                {d.tables?.length ? ` · ${tn(d.tables.length, '{n} table', '{n} tables')}` : ''}
+                                {d.figures?.length ? ` · ${tn(d.figures.length, '{n} figure', '{n} figures')}` : ''}
                                 {d.pages?.some((p) => p.ocr) ? ' · OCR' : ''}
                               </span>
                             )}
@@ -597,8 +617,8 @@ export function Upload() {
                     <td>
                       <input
                         className={`input${!d.isReference && d.state === 'ready' && !d.studentName.trim() ? ' input-invalid' : ''}`}
-                        aria-label={`Student name for ${d.fileName}`}
-                        placeholder={d.isReference ? 'Not needed' : 'Name'}
+                        aria-label={t('Student name for {file}', { file: d.fileName })}
+                        placeholder={d.isReference ? t('Not needed') : t('Name')}
                         value={d.studentName}
                         disabled={d.isReference || d.state === 'error'}
                         onChange={(e) => dispatch({ type: 'updateDoc', id: d.id, patch: { studentName: e.target.value } })}
@@ -608,7 +628,7 @@ export function Upload() {
                       <input
                         className="input input-group"
                         list="group-options"
-                        aria-label={`Group for ${d.fileName}`}
+                        aria-label={t('Group for {name}', { name: d.fileName })}
                         placeholder={d.isReference ? '—' : '5A'}
                         value={d.group}
                         disabled={d.isReference || d.state === 'error'}
@@ -622,7 +642,7 @@ export function Upload() {
                     <td>
                       <input
                         className="input"
-                        aria-label={`Assignment title for ${d.fileName}`}
+                        aria-label={t('Assignment title for {file}', { file: d.fileName })}
                         value={d.assignmentTitle}
                         disabled={d.state === 'error'}
                         onChange={(e) => dispatch({ type: 'updateDoc', id: d.id, patch: { assignmentTitle: e.target.value } })}
@@ -633,19 +653,19 @@ export function Upload() {
                         <input
                           type="checkbox"
                           checked={d.isReference}
-                          aria-label={`Mark ${d.fileName} as a reference file`}
+                          aria-label={t('Mark {file} as a reference file', { file: d.fileName })}
                           disabled={d.state === 'error'}
                           onChange={(e) => dispatch({ type: 'updateDoc', id: d.id, patch: { isReference: e.target.checked } })}
                         />
-                        <span className="ref-text">Reference</span>
+                        <span className="ref-text">{t('Reference')}</span>
                       </label>
                     </td>
                     <td className="right">
                       <button
                         type="button"
                         className="icon-button row-remove"
-                        aria-label={`Remove ${d.fileName}`}
-                        title="Remove"
+                        aria-label={t('Remove {file}', { file: d.fileName })}
+                        title={t('Remove')}
                         onClick={() => dispatch({ type: 'removeDoc', id: d.id })}
                       >
                         <Icon name="trash" size={16} />
@@ -662,8 +682,8 @@ export function Upload() {
           <p className="analyze-reason" role="status">
             {canAnalyze ? (
               <>
-                <Icon name="check" size={16} /> {ready.length} file{ready.length === 1 ? '' : 's'} ready to analyze
-                {failed.length > 0 && ` · ${failed.length} unreadable file${failed.length === 1 ? '' : 's'} will be skipped`}
+                <Icon name="check" size={16} /> {tn(ready.length, '{n} file ready to analyze', '{n} files ready to analyze')}
+                {failed.length > 0 && ` · ${tn(failed.length, '{n} unreadable file will be skipped', '{n} unreadable files will be skipped')}`}
               </>
             ) : (
               <>
@@ -671,14 +691,14 @@ export function Upload() {
                 {reason}
                 {missingName.length > 0 && readingCount === 0 && (
                   <button type="button" className="button button-link" onClick={focusFirstMissing}>
-                    Show
+                    {t('Show')}
                   </button>
                 )}
               </>
             )}
           </p>
           <button type="button" className="button button-primary button-lg" disabled={!canAnalyze} onClick={analyze}>
-            Analyze{ready.length ? ` ${ready.length} file${ready.length === 1 ? '' : 's'}` : ''} <Icon name="arrow" size={18} />
+            {ready.length ? tn(ready.length, 'Analyze {n} file', 'Analyze {n} files') : t('Analyze')} <Icon name="arrow" size={18} />
           </button>
         </div>
       </section>
@@ -687,7 +707,7 @@ export function Upload() {
 
       {analyzedRefs.length > 0 && (
         <section className="card">
-          <h2>Reference files in this session</h2>
+          <h2>{t('Reference files in this session')}</h2>
           <ul className="plain-list">
             {analyzedRefs.map((r) => (
               <li key={r.id}>

@@ -1,6 +1,7 @@
 // Revisión de tablas, figuras y gráficas: que tengan título numerado ("Table 1", "Figure 1"),
 // que se mencionen en el texto y, en las gráficas de Word, que tengan título y ejes con nombre.
 
+import { t, tn } from '../i18n';
 import type { FigureInfo, FileKind, TableInfo } from '../extract/types';
 import type { CheckResult } from './types';
 
@@ -45,22 +46,33 @@ function captionCheck(
     }
   });
   const outOfOrder = numbers.some((n, i) => i > 0 && n <= numbers[i - 1]);
+  // Los títulos de ejemplo ("Table 1") van en inglés: es el idioma del documento del alumno
+  const isTable = label === 'Table';
   const instances = [
-    ...missing.map((i) => `${label} in position ${i} has no numbered title (e.g. “${label} ${i}”).`),
-    ...notMentioned.map((n) => `${label} ${n} is not mentioned in the text.`),
-    ...(outOfOrder ? [`${label} numbers are not in order: ${numbers.join(', ')}.`] : []),
+    ...missing.map((i) =>
+      isTable
+        ? t('Table in position {i} has no numbered title (e.g. “Table {i}”).', { i })
+        : t('Figure in position {i} has no numbered title (e.g. “Figure {i}”).', { i }),
+    ),
+    ...notMentioned.map((n) => (isTable ? t('Table {n} is not mentioned in the text.', { n }) : t('Figure {n} is not mentioned in the text.', { n }))),
+    ...(outOfOrder
+      ? [isTable ? t('Table numbers are not in order: {list}.', { list: numbers.join(', ') }) : t('Figure numbers are not in order: {list}.', { list: numbers.join(', ') })]
+      : []),
   ];
-  const noun = label.toLowerCase();
-  const plural = items.length === 1 ? noun : `${noun}s`;
   let outcome: CheckResult['outcome'] = 'passed';
   if (missing.length === items.length) outcome = 'failed';
   else if (instances.length) outcome = 'review';
+  const found = isTable
+    ? tn(items.length, '{n} table found', '{n} tables found')
+    : tn(items.length, '{n} figure found', '{n} figures found');
   const detail =
     outcome === 'passed'
-      ? `${items.length} ${plural} found, all with a numbered title and mentioned in the text.`
+      ? t('{found}, all with a numbered title and mentioned in the text.', { found })
       : missing.length === items.length
-        ? `${items.length} ${plural} found without a numbered title (“${label} 1”).`
-        : `${items.length} ${plural} found. ${instances.length} detail${instances.length === 1 ? '' : 's'} to review.`;
+        ? isTable
+          ? t('{found} without a numbered title (“Table 1”).', { found })
+          : t('{found} without a numbered title (“Figure 1”).', { found })
+        : `${t('{found}.', { found })} ${tn(instances.length, '{n} detail to review.', '{n} details to review.')}`;
   return { id, name, outcome, detail, instances, group: 'figures' };
 }
 
@@ -70,9 +82,9 @@ export function runFigureChecks(input: FiguresInput): CheckResult[] {
     return [
       {
         id: 'tablesFigures',
-        name: 'Tables & figures',
+        name: t('Tables & figures'),
         outcome: 'na',
-        detail: 'Not available for this file type',
+        detail: t('Not available for this file type'),
         group: 'figures',
       },
     ];
@@ -85,35 +97,36 @@ export function runFigureChecks(input: FiguresInput): CheckResult[] {
     return [
       {
         id: 'tablesFigures',
-        name: 'Tables & figures',
+        name: t('Tables & figures'),
         outcome: 'na',
-        detail: 'No tables, figures or charts were found in this document.',
+        detail: t('No tables, figures or charts were found in this document.'),
         group: 'figures',
       },
     ];
   }
-  if (tables.length) out.push(captionCheck('tables', 'Tables', tables, 'Table', text));
-  if (figures.length) out.push(captionCheck('figures', 'Figures & charts', figures, 'Figure', text));
+  if (tables.length) out.push(captionCheck('tables', t('Tables'), tables, 'Table', text));
+  if (figures.length) out.push(captionCheck('figures', t('Figures & charts'), figures, 'Figure', text));
 
   const charts = figures.filter((f) => f.kind === 'chart' && f.chart);
   if (charts.length) {
     const instances: string[] = [];
     charts.forEach((f, i) => {
       const c = f.chart!;
-      const label = c.title ? `“${c.title}”` : `Chart ${i + 1}`;
-      if (!c.title && !f.caption) instances.push(`${label} (${c.type.toLowerCase()}) has no title.`);
+      const label = c.title ? `“${c.title}”` : t('Chart {n}', { n: i + 1 });
+      if (!c.title && !f.caption) instances.push(t('{label} ({type}) has no title.', { label, type: t(c.type).toLowerCase() }));
       const needsAxes = !/pie|doughnut/i.test(c.type);
-      if (needsAxes && c.axisTitles.length < 2) instances.push(`${label}: axes are not labeled (${c.axisTitles.length} of 2 axis titles).`);
-      if (c.series.length > 1 && c.series.some((s) => /^series \d+$/i.test(s.name)))
-        instances.push(`${label}: some series still have default names (“Series 1”).`);
+      if (needsAxes && c.axisTitles.length < 2)
+        instances.push(t('{label}: axes are not labeled ({count} of 2 axis titles).', { label, count: c.axisTitles.length }));
+      if (c.series.length > 1 && c.series.some((s) => /^(series|serie) \d+$/i.test(s.name)))
+        instances.push(t('{label}: some series still have default names (“Series 1”).', { label }));
     });
     out.push({
       id: 'charts',
-      name: 'Charts',
+      name: t('Charts'),
       outcome: instances.length ? 'review' : 'passed',
       detail: instances.length
-        ? `${charts.length} chart${charts.length === 1 ? '' : 's'} read from the file. ${instances.length} detail${instances.length === 1 ? '' : 's'} to review.`
-        : `${charts.length} chart${charts.length === 1 ? '' : 's'} with title and labeled axes.`,
+        ? `${tn(charts.length, '{n} chart read from the file.', '{n} charts read from the file.')} ${tn(instances.length, '{n} detail to review.', '{n} details to review.')}`
+        : tn(charts.length, '{n} chart with title and labeled axes.', '{n} charts with title and labeled axes.'),
       instances,
       group: 'figures',
     });

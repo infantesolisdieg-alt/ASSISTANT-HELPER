@@ -2,6 +2,7 @@
 
 import { useDeferredValue, useMemo, useState } from 'react';
 import type { DocAnalysis } from '../analysis';
+import { t, tk, tn } from '../i18n';
 import { useStore } from '../state/store';
 import { NO_GROUP, groupLabel, groupsOf, type DocItem } from '../types';
 import { ProgressSegments, type DonutSegment } from './charts';
@@ -12,20 +13,20 @@ import { Highlighted, matchesSearch, SearchBox } from './SearchBox';
 type SortKey = 'order' | 'name' | 'similarity' | 'ai' | 'status';
 
 const SORTS: { key: SortKey; label: string }[] = [
-  { key: 'order', label: 'Upload order' },
-  { key: 'name', label: 'Student (A–Z)' },
-  { key: 'similarity', label: 'Similarity (high first)' },
-  { key: 'ai', label: 'AI indicators (high first)' },
-  { key: 'status', label: 'Pending first' },
+  { key: 'order', label: tk('Upload order') },
+  { key: 'name', label: tk('Student (A–Z)') },
+  { key: 'similarity', label: tk('Similarity (high first)') },
+  { key: 'ai', label: tk('AI indicators (high first)') },
+  { key: 'status', label: tk('Pending first') },
 ];
 
 const STATUS_ORDER = { pending: 0, 'needs-corrections': 1, approved: 2 } as const;
 
 function progressOf(docs: DocItem[]): DonutSegment[] {
   return [
-    { key: 'approved', label: 'Approved', value: docs.filter((d) => d.reviewStatus === 'approved').length, tone: 'ok' },
-    { key: 'corrections', label: 'Needs corrections', value: docs.filter((d) => d.reviewStatus === 'needs-corrections').length, tone: 'warn' },
-    { key: 'pending', label: 'Pending', value: docs.filter((d) => d.reviewStatus === 'pending').length, tone: 'neutral' },
+    { key: 'approved', label: t('Approved'), value: docs.filter((d) => d.reviewStatus === 'approved').length, tone: 'ok' },
+    { key: 'corrections', label: t('Needs corrections'), value: docs.filter((d) => d.reviewStatus === 'needs-corrections').length, tone: 'warn' },
+    { key: 'pending', label: t('Pending'), value: docs.filter((d) => d.reviewStatus === 'pending').length, tone: 'neutral' },
   ];
 }
 
@@ -74,17 +75,15 @@ export function SubmissionsList() {
     <section className="card submissions-card">
       <div className="card-header">
         <div>
-          <h2>Submissions</h2>
+          <h2>{t('Submissions')}</h2>
           <p className="muted-text small">
-            Similarity threshold: {state.settings.similarityThreshold}%
-            {references > 0 && ` · ${references} reference file${references === 1 ? '' : 's'}`}
-            {groups.length > 0 && ` · ${groups.length} group${groups.length === 1 ? '' : 's'}`}
+            {t('Similarity threshold: {p}%', { p: state.settings.similarityThreshold })}
+            {references > 0 && ` · ${tn(references, '{n} reference file', '{n} reference files')}`}
+            {groups.length > 0 && ` · ${tn(groups.length, '{n} group', '{n} groups')}`}
           </p>
         </div>
         <div className="progress-wrap">
-          <span className="small muted-text">
-            {reviewed}/{submissions.length} reviewed
-          </span>
+          <span className="small muted-text">{t('{done}/{n} reviewed', { done: reviewed, n: submissions.length })}</span>
           <ProgressSegments segments={all} />
         </div>
       </div>
@@ -94,16 +93,16 @@ export function SubmissionsList() {
           id="submissions-search"
           value={query}
           onChange={setQuery}
-          label="Search submissions"
-          placeholder="Search by student, group, assignment or file…"
+          label={t('Search submissions')}
+          placeholder={t('Search by student, group, assignment or file…')}
           shortcut
         />
         <label className="sort-select">
-          <span className="sr-only">Sort submissions</span>
+          <span className="sr-only">{t('Sort submissions')}</span>
           <select className="input select" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
             {SORTS.map((s) => (
               <option key={s.key} value={s.key}>
-                {s.label}
+                {t(s.label)}
               </option>
             ))}
           </select>
@@ -111,7 +110,7 @@ export function SubmissionsList() {
       </div>
 
       {tabs.length > 0 && (
-        <div className="group-tabs" role="tablist" aria-label="Filter by group">
+        <div className="group-tabs" role="tablist" aria-label={t('Filter by group')}>
           <button
             type="button"
             role="tab"
@@ -119,7 +118,7 @@ export function SubmissionsList() {
             className="group-tab"
             onClick={() => setGroup('all')}
           >
-            All groups <span className="group-count">{submissions.length}</span>
+            {t('All groups')} <span className="group-count">{submissions.length}</span>
           </button>
           {tabs.map((g) => (
             <button
@@ -130,7 +129,7 @@ export function SubmissionsList() {
               className={`group-tab${g === NO_GROUP ? ' is-none' : ''}`}
               onClick={() => setGroup(g)}
             >
-              {g} <span className="group-count">{countFor(g)}</span>
+              {g === NO_GROUP ? t(NO_GROUP) : g} <span className="group-count">{countFor(g)}</span>
             </button>
           ))}
         </div>
@@ -140,8 +139,11 @@ export function SubmissionsList() {
         <div className="empty-inline list-empty">
           <Icon name="inbox" size={20} />
           <span>
-            No submissions match{deferredQuery ? ` “${deferredQuery}”` : ''}
-            {activeGroup !== 'all' ? ` in ${activeGroup}` : ''}.
+            {deferredQuery && activeGroup !== 'all'
+              ? t('No submissions match “{q}” in {group}.', { q: deferredQuery, group: activeGroup === NO_GROUP ? t(NO_GROUP) : activeGroup })
+              : deferredQuery
+                ? t('No submissions match “{q}”.', { q: deferredQuery })
+                : t('No submissions in {group}.', { group: activeGroup === NO_GROUP ? t(NO_GROUP) : activeGroup })}
           </span>
           <button
             type="button"
@@ -151,7 +153,7 @@ export function SubmissionsList() {
               setGroup('all');
             }}
           >
-            Show all
+            {t('Show all')}
           </button>
         </div>
       ) : (
@@ -159,15 +161,15 @@ export function SubmissionsList() {
           <table className="table">
             <thead>
               <tr>
-                <th scope="col">Student</th>
-                <th scope="col">Group</th>
-                <th scope="col">Assignment</th>
-                <th scope="col">Type</th>
-                <th scope="col">Similarity</th>
-                <th scope="col">AI indicators</th>
-                <th scope="col">Review</th>
+                <th scope="col">{t('Student')}</th>
+                <th scope="col">{t('Group')}</th>
+                <th scope="col">{t('Assignment')}</th>
+                <th scope="col">{t('Type')}</th>
+                <th scope="col">{t('Similarity')}</th>
+                <th scope="col">{t('AI indicators')}</th>
+                <th scope="col">{t('Review')}</th>
                 <th scope="col">
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">{t('Actions')}</span>
                 </th>
               </tr>
             </thead>
@@ -179,9 +181,9 @@ export function SubmissionsList() {
                     <tr className="group-row">
                       <th colSpan={8} scope="rowgroup">
                         <span className="group-row-inner">
-                          <span className="group-row-name">{s.name}</span>
+                          <span className="group-row-name">{s.name === NO_GROUP ? t(NO_GROUP) : s.name}</span>
                           <span className="small muted-text">
-                            {s.docs.length} submission{s.docs.length === 1 ? '' : 's'} · {s.docs.length - p[2].value} reviewed
+                            {tn(s.docs.length, '{n} submission', '{n} submissions')} · {t('{n} reviewed', { n: s.docs.length - p[2].value })}
                           </span>
                           <ProgressSegments segments={p} />
                         </span>
@@ -232,7 +234,7 @@ export function SubmissionsList() {
                               <AiBadge level={a.ai.level} />
                             </span>
                           ) : (
-                            <span className="muted-text">Off</span>
+                            <span className="muted-text">{t('Off')}</span>
                           )}
                         </td>
                         <td>
@@ -242,13 +244,13 @@ export function SubmissionsList() {
                           <button
                             type="button"
                             className="button button-link"
-                            aria-label={`Open review for ${d.studentName}`}
+                            aria-label={t('Open review for {name}', { name: d.studentName })}
                             onClick={(e) => {
                               e.stopPropagation();
                               go('review', d.id);
                             }}
                           >
-                            Open
+                            {t('Open')}
                           </button>
                         </td>
                       </tr>
@@ -262,7 +264,7 @@ export function SubmissionsList() {
       )}
       {rows.length > 0 && (deferredQuery || activeGroup !== 'all') && (
         <p className="small muted-text list-count">
-          Showing {rows.length} of {submissions.length} submissions.
+          {t('Showing {shown} of {n} submissions.', { shown: rows.length, n: submissions.length })}
         </p>
       )}
     </section>

@@ -1,6 +1,7 @@
 // Reconocimiento de texto (OCR) con tesseract.js, 100 % en el navegador.
 // La imagen nunca sale de la computadora; solo se descargan una vez los datos del idioma inglés.
 
+import { t } from '../i18n';
 import type { LayoutLine } from './layout';
 
 type TesseractWorker = import('tesseract.js').Worker;
@@ -59,7 +60,7 @@ export function ocrImage(
     try {
       worker = await getWorker();
     } catch {
-      throw new Error('Text recognition could not start. Check your internet connection and try again.');
+      throw new Error(t('Text recognition could not start. Check your internet connection and try again.'));
     }
     progressHandler = onProgress ?? null;
     try {

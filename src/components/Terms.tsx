@@ -2,8 +2,9 @@
 // cuentas de Google que todavía no aceptaron la versión actual.
 
 import { useState } from 'react';
+import { APP_NAME, locale, t, tn } from '../i18n';
 import { useStore } from '../state/store';
-import { acceptTermsNow, TERMS_URL } from '../terms';
+import { acceptTermsNow, termsUrl } from '../terms';
 import { Modal } from './common';
 import { Icon } from './icons';
 
@@ -11,8 +12,8 @@ function TermsFrame({ section, tall }: { section?: string; tall?: boolean }) {
   return (
     <iframe
       className={`terms-frame${tall ? ' terms-frame-tall' : ''}`}
-      src={TERMS_URL + (section ? '#' + section : '')}
-      title="Terms of Use and Privacy Notice"
+      src={termsUrl() + (section ? '#' + section : '')}
+      title={t('Terms of Use and Privacy Notice')}
     />
   );
 }
@@ -21,16 +22,16 @@ function TermsFrame({ section, tall }: { section?: string; tall?: boolean }) {
 export function TermsDialog({ onClose, onAgree, section }: { onClose: () => void; onAgree?: () => void; section?: string }) {
   return (
     <Modal
-      title="Terms of Use and Privacy Notice"
+      title={t('Terms of Use and Privacy Notice')}
       onClose={onClose}
       wide
       footer={
         <>
-          <a className="button button-link terms-newtab" href={TERMS_URL} target="_blank" rel="noopener noreferrer">
-            Open in a new tab
+          <a className="button button-link terms-newtab" href={termsUrl()} target="_blank" rel="noopener noreferrer">
+            {t('Open in a new tab')}
           </a>
           <button type="button" className="button button-secondary" onClick={onClose}>
-            Close
+            {t('Close')}
           </button>
           {onAgree && (
             <button
@@ -41,7 +42,7 @@ export function TermsDialog({ onClose, onAgree, section }: { onClose: () => void
                 onClose();
               }}
             >
-              I agree
+              {t('I agree')}
             </button>
           )}
         </>
@@ -75,27 +76,29 @@ export function TermsGate() {
         <div className="terms-gate-head">
           <img src="/logo-mark.svg" alt="" width="48" height="48" />
           <div>
-            <h1>{updated ? 'Our terms were updated' : 'Before you continue'}</h1>
+            <h1>{updated ? t('Our terms were updated') : t('Before you continue')}</h1>
             <p className="muted-text">
-              Please read how Assistant Helper uses your Google account, the Google Drive files you choose and the work you save.
+              {t('Please read how {app} uses your Google account, the Google Drive files you choose and the work you save.', {
+                app: APP_NAME,
+              })}
             </p>
           </div>
         </div>
         <ul className="terms-points">
           <li>
-            <Icon name="shield" size={16} /> Original files are read in your browser and never uploaded.
+            <Icon name="shield" size={16} /> {t('Original files are read in your browser and never uploaded.')}
           </li>
           <li>
-            <Icon name="check" size={16} /> Google Drive: only the files you pick, never the rest of your Drive.
+            <Icon name="check" size={16} /> {t('Google Drive: only the files you pick, never the rest of your Drive.')}
           </li>
           <li>
-            <Icon name="check" size={16} /> Your saved work is private to your account and is never sold or shared.
+            <Icon name="check" size={16} /> {t('Your saved work is private to your account and is never sold or shared.')}
           </li>
         </ul>
         <TermsFrame tall />
         <div className="terms-gate-actions">
           <button type="button" className="button button-link" onClick={decline} disabled={busy}>
-            Decline and sign out
+            {t('Decline and sign out')}
           </button>
           <button
             type="button"
@@ -103,7 +106,7 @@ export function TermsGate() {
             disabled={busy}
             onClick={() => dispatch({ type: 'updateProfile', patch: acceptTermsNow() })}
           >
-            I agree and continue <Icon name="arrow" size={18} />
+            {t('I agree and continue')} <Icon name="arrow" size={18} />
           </button>
         </div>
       </div>
@@ -120,7 +123,7 @@ export function PrivacyCard() {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const accepted = p.termsAcceptedAt
-    ? new Date(p.termsAcceptedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    ? new Date(p.termsAcceptedAt).toLocaleDateString(locale(), { year: 'numeric', month: 'long', day: 'numeric' })
     : null;
 
   const deleteAll = async () => {
@@ -134,24 +137,26 @@ export function PrivacyCard() {
       dispatch({ type: 'signOut' });
     } catch (e) {
       const cloud = await import('../cloud/cloud').catch(() => null);
-      setError(cloud ? cloud.friendlyError(e) || 'The data could not be deleted.' : 'The data could not be deleted.');
+      setError((cloud && cloud.friendlyError(e)) || t('The data could not be deleted.'));
       setDeleting(false);
     }
   };
 
   return (
     <section className="card privacy-card">
-      <h2>Privacy and terms</h2>
+      <h2>{t('Privacy and terms')}</h2>
       <div className="privacy-grid">
         <div className="privacy-item">
           <span className="privacy-icon">
             <Icon name="shield" size={18} />
           </span>
           <div>
-            <h3>Terms of Use and Privacy Notice</h3>
-            <p className="muted-text small">{accepted ? `You accepted version ${p.termsVersion} on ${accepted}.` : 'Accepted for this session.'}</p>
+            <h3>{t('Terms of Use and Privacy Notice')}</h3>
+            <p className="muted-text small">
+              {accepted ? t('You accepted version {version} on {date}.', { version: p.termsVersion ?? '', date: accepted }) : t('Accepted for this session.')}
+            </p>
             <button type="button" className="button button-secondary" onClick={() => setShowTerms(true)}>
-              Read the terms
+              {t('Read the terms')}
             </button>
           </div>
         </div>
@@ -161,12 +166,12 @@ export function PrivacyCard() {
               <Icon name="check" size={18} />
             </span>
             <div>
-              <h3>Google account and Drive access</h3>
+              <h3>{t('Google account and Drive access')}</h3>
               <p className="muted-text small">
-                Assistant Helper can only open the Drive files you choose. You can remove its access at any time.
+                {t('{app} can only open the Drive files you choose. You can remove its access at any time.', { app: APP_NAME })}
               </p>
               <a className="button button-secondary" href="https://myaccount.google.com/connections" target="_blank" rel="noopener noreferrer">
-                Manage Google access
+                {t('Manage Google access')}
               </a>
             </div>
           </div>
@@ -177,15 +182,15 @@ export function PrivacyCard() {
               <Icon name="trash" size={18} />
             </span>
             <div>
-              <h3>Delete my saved data</h3>
-              <p className="muted-text small">Deletes your profile, settings and every saved submission from the cloud, then signs you out.</p>
+              <h3>{t('Delete my saved data')}</h3>
+              <p className="muted-text small">{t('Deletes your profile, settings and every saved submission from the cloud, then signs you out.')}</p>
               <button
                 type="button"
                 className="button button-danger"
                 onClick={() => setConfirmDelete(true)}
                 disabled={state.cloud.state === 'saving'}
               >
-                Delete my saved data
+                {t('Delete my saved data')}
               </button>
             </div>
           </div>
@@ -194,26 +199,25 @@ export function PrivacyCard() {
       {showTerms && <TermsDialog onClose={() => setShowTerms(false)} />}
       {confirmDelete && (
         <Modal
-          title="Delete all your saved data?"
+          title={t('Delete all your saved data?')}
           onClose={() => !deleting && setConfirmDelete(false)}
           footer={
             <>
               <button type="button" className="button button-secondary" onClick={() => setConfirmDelete(false)} disabled={deleting}>
-                Cancel
+                {t('Cancel')}
               </button>
               <button type="button" className="button button-danger" onClick={deleteAll} disabled={deleting}>
                 {deleting && <span className="spinner" aria-hidden="true" />}
-                {deleting ? 'Deleting…' : 'Delete everything'}
+                {deleting ? t('Deleting…') : t('Delete everything')}
               </button>
             </>
           }
         >
           <p>
-            This permanently deletes your profile, your settings and{' '}
-            <strong>
-              {state.docs.filter((d) => d.analyzed).length} saved submission{state.docs.filter((d) => d.analyzed).length === 1 ? '' : 's'}
-            </strong>{' '}
-            from your Google account in Assistant Helper. It cannot be undone. Your files in Google Drive are not affected.
+            {t('This permanently deletes your profile, your settings and {saved} from your Google account in {app}. It cannot be undone. Your files in Google Drive are not affected.', {
+              saved: tn(state.docs.filter((d) => d.analyzed).length, '{n} saved submission', '{n} saved submissions'),
+              app: APP_NAME,
+            })}
           </p>
           {error && (
             <p className="form-hint text-bad" role="alert">

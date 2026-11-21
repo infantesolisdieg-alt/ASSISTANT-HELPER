@@ -4,6 +4,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react';
 import { analyzeAll, type SessionAnalysis } from '../analysis';
 import { cloudEnabled } from '../cloud/config';
+import { browserLang, setLang, t, type Lang } from '../i18n';
 import { DEFAULT_SETTINGS, type Settings } from '../settings';
 import { cleanGroup, releaseDoc, type DocItem, type Note, type ReviewStatus, type TeacherProfile } from '../types';
 
@@ -22,6 +23,8 @@ interface State {
   cloud: CloudStatus;
   /** Sube cada vez que la docente pide reintentar el guardado. */
   cloudRetry: number;
+  /** Idioma de la interfaz. Con cuenta de Google también se guarda en el perfil. */
+  lang: Lang;
 }
 
 export interface CloudStatus {
@@ -47,7 +50,8 @@ type Action =
   | { type: 'hydrate'; profile: TeacherProfile; settings: Settings | null; docs: DocItem[] }
   | { type: 'authReady' }
   | { type: 'cloudStatus'; status: CloudStatus }
-  | { type: 'cloudRetry' };
+  | { type: 'cloudRetry' }
+  | { type: 'setLang'; lang: Lang };
 
 const initialState: State = {
   profile: null,
@@ -59,6 +63,7 @@ const initialState: State = {
   auth: cloudEnabled ? 'checking' : 'ready',
   cloud: { state: 'off' },
   cloudRetry: 0,
+  lang: browserLang(),
 };
 
 function reducer(state: State, action: Action): State {
@@ -111,24 +116,35 @@ function reducer(state: State, action: Action): State {
         auth: state.auth,
         cloud: state.cloud,
         cloudRetry: state.cloudRetry,
+        lang: state.lang,
       };
-    case 'signIn':
-      return { ...initialState, auth: 'ready', profile: action.profile };
+    case 'signIn': {
+      const lang = action.profile.lang ?? state.lang;
+      return { ...initialState, auth: 'ready', lang, profile: { ...action.profile, lang } };
+    }
     case 'signOut':
       // Cambiar de profesor termina la sesión local: archivos, resultados y criterios.
-      // (Con cuenta de Google, lo guardado sigue en la nube.)
-      return { ...initialState, auth: 'ready' };
+      // (Con cuenta de Google, lo guardado sigue en la nube.) El idioma se conserva para la bienvenida.
+      return { ...initialState, auth: 'ready', lang: state.lang };
     case 'updateProfile':
-      return state.profile ? { ...state, profile: { ...state.profile, ...action.patch } } : state;
-    case 'hydrate':
+      return state.profile
+        ? { ...state, lang: action.patch.lang ?? state.lang, profile: { ...state.profile, ...action.patch } }
+        : state;
+    case 'setLang':
+      return { ...state, lang: action.lang, profile: state.profile ? { ...state.profile, lang: action.lang } : null };
+    case 'hydrate': {
+      // El idioma guardado en la cuenta; si no tiene, el que se eligió en la bienvenida
+      const lang = action.profile.lang ?? state.lang;
       return {
         ...initialState,
         auth: 'ready',
-        profile: action.profile,
+        lang,
+        profile: { ...action.profile, lang },
         settings: action.settings ?? DEFAULT_SETTINGS,
         docs: action.docs,
         cloud: { state: 'saved', savedAt: Date.now() },
       };
+    }
     case 'authReady':
       return { ...state, auth: 'ready' };
     case 'cloudStatus':
@@ -165,6 +181,8 @@ const StoreContext = createContext<StoreValue | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  // El idioma se aplica antes de dibujar las pantallas (t() lo lee)
+  setLang(state.lang);
 
   const analyzedDocs = useMemo(() => state.docs.filter((d) => d.analyzed && d.state === 'ready'), [state.docs]);
   const docsRef = useRef(analyzedDocs);
@@ -174,7 +192,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const analysis = useMemo(
     () => analyzeAll(docsRef.current, state.settings),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [contentKey, state.settings],
+    [contentKey, state.settings, state.lang],
   );
 
   const submissions = useMemo(() => analyzedDocs.filter((d) => !d.isReference), [analyzedDocs]);
@@ -227,6 +245,6 @@ export function newId(prefix = 'doc'): string {
 }
 
 export function docLabel(d: DocItem | undefined): string {
-  if (!d) return 'Removed document';
-  return d.isReference ? `Reference: ${d.assignmentTitle}` : `${d.studentName} — ${d.assignmentTitle}`;
+  if (!d) return t('Removed document');
+  return d.isReference ? t('Reference: {title}', { title: d.assignmentTitle }) : `${d.studentName} — ${d.assignmentTitle}`;
 }

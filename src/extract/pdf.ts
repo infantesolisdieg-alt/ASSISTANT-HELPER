@@ -1,6 +1,7 @@
 // Lectura de .pdf con pdfjs-dist (carga diferida). Conserva la posición de cada fragmento
 // para resaltar sobre la página original. Las páginas sin texto (escaneadas) se leen con OCR.
 
+import { t } from '../i18n';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { assembleLines, type LayoutLine } from './layout';
 import { ocrImage } from './ocr';
@@ -58,7 +59,7 @@ export async function readPdf(url: string, onProgress?: ProgressFn): Promise<Ext
   try {
     pdf = await loadPdf(url);
   } catch {
-    throw new Error('This PDF could not be opened. It may be damaged or password-protected.');
+    throw new Error(t('This PDF could not be opened. It may be damaged or password-protected.'));
   }
 
   const lines: LayoutLine[] = [];
@@ -70,7 +71,7 @@ export async function readPdf(url: string, onProgress?: ProgressFn): Promise<Ext
   const imageOps = new Set([pdfjs.OPS.paintImageXObject, pdfjs.OPS.paintInlineImageXObject, pdfjs.OPS.paintImageXObjectRepeat]);
 
   for (let n = 1; n <= pdf.numPages; n++) {
-    onProgress?.(`Reading page ${n} of ${pdf.numPages}…`, (n - 1) / pdf.numPages);
+    onProgress?.(t('Reading page {n} of {total}…', { n, total: pdf.numPages }), (n - 1) / pdf.numPages);
     const page = await pdf.getPage(n);
     const viewport = page.getViewport({ scale: 1 });
     const content = await page.getTextContent();
@@ -110,7 +111,7 @@ export async function readPdf(url: string, onProgress?: ProgressFn): Promise<Ext
       const ctx = canvas.getContext('2d');
       if (ctx) await page.render({ canvasContext: ctx, viewport: vp }).promise;
       const res = await ocrImage(canvas, n, 1 / scale, (p) =>
-        onProgress?.(`Recognizing text on page ${n} of ${pdf.numPages} (${Math.round(p * 100)}%)…`, (n - 1 + p) / pdf.numPages),
+        onProgress?.(t('Recognizing text on page {n} of {total} ({p}%)…', { n, total: pdf.numPages, p: Math.round(p * 100) }), (n - 1 + p) / pdf.numPages),
       );
       lines.push(...res.lines);
       confidenceSum += res.confidence;
@@ -155,7 +156,7 @@ export async function readPdf(url: string, onProgress?: ProgressFn): Promise<Ext
       });
     });
   }
-  onProgress?.('Finishing…', 1);
+  onProgress?.(t('Finishing…'), 1);
 
   const { paragraphs, boxesByPage } = assembleLines(lines);
   boxesByPage.forEach((boxes, page) => {

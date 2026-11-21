@@ -1,11 +1,16 @@
 // Indicadores heurísticos de texto posiblemente generado por IA.
 // Todo se calcula en el navegador. Son orientativos, nunca determinantes.
 
+import { t, tk, tn } from '../i18n';
 import { clamp01, splitParagraphs, splitSentences, tokenize, type Sentence } from './text';
 import type { AiLevel } from './types';
 
-export const AI_DISCLAIMER =
-  'AI indicators are advisory, not determinative. Always consider them alongside drafting history, student context and your own judgment.';
+/** Se muestra con t(AI_DISCLAIMER). */
+export const AI_DISCLAIMER = tk(
+  'AI indicators are advisory, not determinative. Always consider them alongside drafting history, student context and your own judgment.',
+);
+
+const quoteList = (items: string[]) => items.map((p) => `“${p}”`).join(', ');
 
 export const AI_PHRASES: { phrase: string; weight: number }[] = [
   { phrase: 'delve into', weight: 1 },
@@ -164,12 +169,14 @@ export function analyzeAi(text: string): AiResult {
   const distinctPhrases = [...new Set(hits.map((h) => h.phrase))];
   signals.push({
     id: 'phrases',
-    name: 'Typical AI phrases',
+    name: t('Typical AI phrases'),
     score: words.length ? clamp01(density / 1.5) : null,
     detail:
       hits.length === 0
-        ? 'No typical phrases found.'
-        : `${hits.length} occurrence(s): ${distinctPhrases.slice(0, 6).map((p) => `“${p}”`).join(', ')}${distinctPhrases.length > 6 ? ' and others.' : '.'}`,
+        ? t('No typical phrases found.')
+        : (distinctPhrases.length > 6
+            ? tn(hits.length, '{n} occurrence: {list} and others.', '{n} occurrences: {list} and others.', { list: quoteList(distinctPhrases.slice(0, 6)) })
+            : tn(hits.length, '{n} occurrence: {list}.', '{n} occurrences: {list}.', { list: quoteList(distinctPhrases) })),
   });
 
   // 2. Variación de longitud de oraciones (texto muy uniforme = señal)
@@ -178,12 +185,12 @@ export function analyzeAi(text: string): AiResult {
   const burstScore = lengths.length >= 5 ? clamp01((0.55 - cv) / 0.3) : null;
   signals.push({
     id: 'burstiness',
-    name: 'Sentence length variation',
+    name: t('Sentence length variation'),
     score: burstScore,
     detail:
       burstScore === null
-        ? 'Not enough sentences to measure.'
-        : `Variation coefficient ${cv.toFixed(2)} (lower means more uniform sentences; typical human writing is above 0.5).`,
+        ? t('Not enough sentences to measure.')
+        : t('Variation coefficient {cv} (lower means more uniform sentences; typical human writing is above 0.5).', { cv: cv.toFixed(2) }),
   });
 
   // 3. Diversidad de vocabulario
@@ -191,9 +198,12 @@ export function analyzeAi(text: string): AiResult {
   const vocabScore = words.length >= 80 ? clamp01((0.7 - m) / 0.15) : null;
   signals.push({
     id: 'vocabulary',
-    name: 'Vocabulary diversity',
+    name: t('Vocabulary diversity'),
     score: vocabScore,
-    detail: vocabScore === null ? 'Not enough words to measure.' : `Type-token ratio ${m.toFixed(2)} (moving average, 50-word window).`,
+    detail:
+      vocabScore === null
+        ? t('Not enough words to measure.')
+        : t('Type-token ratio {ratio} (moving average, 50-word window).', { ratio: m.toFixed(2) }),
   });
 
   // 4. Inicios de oración repetitivos
@@ -209,14 +219,14 @@ export function analyzeAi(text: string): AiResult {
   const openerScore = sentences.length >= 5 ? clamp01((repeatedShare - 0.15) / 0.35) : null;
   signals.push({
     id: 'openers',
-    name: 'Repetitive sentence openers',
+    name: t('Repetitive sentence openers'),
     score: openerScore,
     detail:
       openerScore === null
-        ? 'Not enough sentences to measure.'
+        ? t('Not enough sentences to measure.')
         : repeatedOpeners.size === 0
-          ? 'Sentence openers are varied.'
-          : `${Math.round(repeatedShare * 100)}% of sentences start with: ${[...repeatedOpeners].map((w) => `“${w}”`).join(', ')}.`,
+          ? t('Sentence openers are varied.')
+          : t('{p}% of sentences start with: {list}.', { p: Math.round(repeatedShare * 100), list: quoteList([...repeatedOpeners]) }),
   });
 
   // 5. Cambios bruscos de estilo entre párrafos
@@ -247,14 +257,14 @@ export function analyzeAi(text: string): AiResult {
   }
   signals.push({
     id: 'styleShift',
-    name: 'Style shifts between paragraphs',
+    name: t('Style shifts between paragraphs'),
     score: styleScore,
     detail:
       styleScore === null
-        ? 'Not enough full paragraphs to compare.'
+        ? t('Not enough full paragraphs to compare.')
         : styleScore === 0
-          ? 'Paragraph style is consistent.'
-          : `A noticeable change in sentence and word length between paragraphs (shift index ${maxJump.toFixed(2)}).`,
+          ? t('Paragraph style is consistent.')
+          : t('A noticeable change in sentence and word length between paragraphs (shift index {index}).', { index: maxJump.toFixed(2) }),
   });
 
   // Puntaje ponderado sobre las señales disponibles
@@ -275,15 +285,15 @@ export function analyzeAi(text: string): AiResult {
     const sh = phraseHits(s.text);
     if (sh.length) {
       score += sh.reduce((a, h) => a + h.weight, 0);
-      reasons.push(`Typical phrase: ${[...new Set(sh.map((h) => `“${h.phrase}”`))].join(', ')}`);
+      reasons.push(t('Typical phrase: {list}', { list: quoteList([...new Set(sh.map((h) => h.phrase))]) }));
     }
     if (burstScore && burstScore > 0.3 && meanLen && Math.abs(s.words - meanLen) / meanLen < 0.15) {
       score += 0.3 * burstScore;
-      reasons.push('Uniform sentence length');
+      reasons.push(t('Uniform sentence length'));
     }
     if (openerScore && openerScore > 0 && repeatedOpeners.has(firstWord(s))) {
       score += 0.3 * openerScore;
-      reasons.push(`Repeated opener “${firstWord(s)}”`);
+      reasons.push(t('Repeated opener “{word}”', { word: firstWord(s) }));
     }
     return { start: s.start, end: s.end, text: s.text, score, reasons };
   });

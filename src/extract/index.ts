@@ -1,10 +1,11 @@
+import { t, tk } from '../i18n';
 import { readDocx } from './docx';
 import { paragraphsFromPlainText } from './lines';
 import type { ExtractedFile, FileKind, ProgressFn } from './types';
 
 export const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp'];
 export const ACCEPTED_EXTENSIONS = ['.docx', '.pdf', '.txt', ...IMAGE_EXTENSIONS];
-export const ACCEPTED_LABEL = '.docx, .pdf, .txt and images (.png, .jpg, .webp)';
+export const ACCEPTED_LABEL = tk('.docx, .pdf, .txt and images (.png, .jpg, .webp)');
 export const MAX_FILE_MB = 30;
 
 export function fileKind(name: string): FileKind | null {
@@ -21,11 +22,11 @@ export function needsSourceUrl(kind: FileKind): boolean {
 
 export async function extractFile(file: File, sourceUrl: string | undefined, onProgress?: ProgressFn): Promise<ExtractedFile> {
   const kind = fileKind(file.name);
-  if (!kind) throw new Error('Unsupported file type.');
-  if (file.size > MAX_FILE_MB * 1024 * 1024) throw new Error(`This file is larger than ${MAX_FILE_MB} MB.`);
+  if (!kind) throw new Error(t('Unsupported file type.'));
+  if (file.size > MAX_FILE_MB * 1024 * 1024) throw new Error(t('This file is larger than {mb} MB.', { mb: MAX_FILE_MB }));
 
   if (kind === 'docx') {
-    onProgress?.('Reading document…', 0.3);
+    onProgress?.(t('Reading document…'), 0.3);
     return readDocx(await file.arrayBuffer());
   }
   if (kind === 'pdf') {

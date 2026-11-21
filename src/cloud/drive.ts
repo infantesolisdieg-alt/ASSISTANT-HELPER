@@ -4,6 +4,7 @@
 // que los que se suben desde la computadora (no pasan por ningún servidor nuestro).
 
 import { ACCEPTED_LABEL, MAX_FILE_MB } from '../extract';
+import { APP_NAME, getLang, t } from '../i18n';
 import { firebaseConfig } from './config';
 
 /** Número del proyecto de Google Cloud (lo pide el selector). */
@@ -32,7 +33,7 @@ function loadScript(src: string): Promise<void> {
       s.onload = () => resolve();
       s.onerror = () => {
         scripts.delete(src);
-        reject(new Error('Google Drive could not be loaded. Check your internet connection.'));
+        reject(new Error(t('Google Drive could not be loaded. Check your internet connection.')));
       };
       document.head.appendChild(s);
     });
@@ -52,7 +53,7 @@ declare global {
 async function loadPicker(): Promise<void> {
   await loadScript('https://apis.google.com/js/api.js');
   await new Promise<void>((resolve, reject) =>
-    window.gapi.load('picker', { callback: resolve, onerror: () => reject(new Error('Google Picker could not be loaded.')) }),
+    window.gapi.load('picker', { callback: resolve, onerror: () => reject(new Error(t('Google Picker could not be loaded.'))) }),
   );
 }
 
@@ -101,7 +102,7 @@ async function getToken(hint?: string): Promise<string> {
   try {
     const result = await mod.signInWithPopup(auth, provider);
     const accessToken = mod.GoogleAuthProvider.credentialFromResult(result)?.accessToken;
-    if (!accessToken) throw new Error('Google Drive sign-in failed.');
+    if (!accessToken) throw new Error(t('Google Drive sign-in failed.'));
     // Los tokens de Google duran 1 hora; se renuevan un poco antes
     token = { value: accessToken, expires: Date.now() + 55 * 60 * 1000 };
     mod.signOut(auth).catch(() => undefined);
@@ -109,9 +110,9 @@ async function getToken(hint?: string): Promise<string> {
   } catch (e) {
     const code = (e as { code?: string })?.code ?? '';
     if (code.includes('popup-closed') || code.includes('cancelled-popup')) throw new DriveCancelled();
-    if (code.includes('popup-blocked')) throw new Error('The browser blocked the Google window. Allow pop-ups for this site and try again.');
-    if (code.includes('unauthorized-domain')) throw new Error('This website is not authorized for Google sign-in yet.');
-    throw e instanceof Error ? e : new Error('Google Drive sign-in failed.');
+    if (code.includes('popup-blocked')) throw new Error(t('The browser blocked the Google window. Allow pop-ups for this site and try again.'));
+    if (code.includes('unauthorized-domain')) throw new Error(t('This website is not authorized for Google sign-in yet.'));
+    throw e instanceof Error ? e : new Error(t('Google Drive sign-in failed.'));
   }
 }
 
@@ -143,8 +144,11 @@ function showBanner(): { remove: () => void } {
   el.setAttribute('role', 'status');
   el.innerHTML =
     '<img src="/logo-mark.svg" alt="" width="28" height="28" />' +
-    '<span><strong>Assistant Helper</strong> · Choose the student files to analyze. ' +
-    'Only the files you select are shared with the app.</span>';
+    '<span><strong>' +
+    APP_NAME +
+    '</strong> · ' +
+    t('Choose the student files to analyze. Only the files you select are shared with the app.') +
+    '</span>';
   el.hidden = true;
   document.body.appendChild(el);
   let frame = 0;
@@ -191,12 +195,12 @@ function pick(accessToken: string): Promise<PickedFile[]> {
 
     // Vista de lista (nombre, dueño, fecha): las miniaturas salen vacías con el permiso drive.file
     const docs = () => new g.DocsView(g.ViewId.DOCS).setMimeTypes(mimes).setMode(g.DocsViewMode.LIST);
-    const myDrive = label(docs().setIncludeFolders(true).setSelectFolderEnabled(false).setParent('root'), 'My Drive');
-    const recent = label(docs(), 'All files');
-    const shared = label(docs().setOwnedByMe(false), 'Shared with me');
-    const starred = label(docs().setStarred(true), 'Starred');
-    const drives = label(docs().setEnableDrives(true).setIncludeFolders(true).setSelectFolderEnabled(false), 'Shared drives');
-    const upload = label(new g.DocsUploadView().setIncludeFolders(true), 'Upload to Drive');
+    const myDrive = label(docs().setIncludeFolders(true).setSelectFolderEnabled(false).setParent('root'), t('My Drive'));
+    const recent = label(docs(), t('All files'));
+    const shared = label(docs().setOwnedByMe(false), t('Shared with me'));
+    const starred = label(docs().setStarred(true), t('Starred'));
+    const drives = label(docs().setEnableDrives(true).setIncludeFolders(true).setSelectFolderEnabled(false), t('Shared drives'));
+    const upload = label(new g.DocsUploadView().setIncludeFolders(true), t('Upload to Drive'));
 
     const banner = showBanner();
     const done = () => banner.remove();
@@ -216,8 +220,9 @@ function pick(accessToken: string): Promise<PickedFile[]> {
         .setOAuthToken(accessToken)
         .setDeveloperKey(firebaseConfig.apiKey)
         .setAppId(GOOGLE_APP_ID)
-        .setTitle('Select student work · up to ' + MAX_PICK + ' files')
-        .setLocale('en')
+        .setTitle(t('Select student work · up to {n} files', { n: MAX_PICK }))
+        // El selector de Google se muestra en el idioma de la app
+        .setLocale(getLang())
         .setCallback((data: any) => {
           const action = data[g.Response.ACTION];
           if (action === g.Action.PICKED || action === g.Action.CANCEL) done();
@@ -238,7 +243,7 @@ function pick(accessToken: string): Promise<PickedFile[]> {
       picker.setVisible(true);
     } catch (e) {
       done();
-      reject(e instanceof Error ? e : new Error('Google Drive could not be opened.'));
+      reject(e instanceof Error ? e : new Error(t('Google Drive could not be opened.')));
     }
   });
 }
@@ -271,14 +276,14 @@ export function downloadName(f: PickedFile): string {
 
 /** Revisa un archivo elegido antes de descargarlo. Devuelve el motivo si no se puede usar. */
 export function driveProblem(f: PickedFile): string | null {
-  if (!MIME_TYPES.includes(f.mimeType)) return f.name + ': only ' + ACCEPTED_LABEL + ' and Google Docs are supported.';
-  if (f.sizeBytes > MAX_FILE_MB * 1024 * 1024) return f.name + ': the file is larger than ' + MAX_FILE_MB + ' MB.';
+  if (!MIME_TYPES.includes(f.mimeType)) return t('{name}: only {types} and Google Docs are supported.', { name: f.name, types: t(ACCEPTED_LABEL) });
+  if (f.sizeBytes > MAX_FILE_MB * 1024 * 1024) return t('{name}: the file is larger than {mb} MB.', { name: f.name, mb: MAX_FILE_MB });
   return null;
 }
 
 /** Abre el selector de Google Drive (pide el permiso la primera vez) y devuelve lo que se eligió. */
 export async function chooseFromDrive(hint?: string): Promise<{ picked: PickedFile[]; token: string }> {
-  if (!driveEnabled) throw new Error('Google Drive is not configured for this site.');
+  if (!driveEnabled) throw new Error(t('Google Drive is not configured for this site.'));
   const [accessToken] = await Promise.all([getToken(hint), loadPicker()]);
   const picked = await pick(accessToken);
   return { picked, token: accessToken };
@@ -292,15 +297,15 @@ export async function downloadDriveFile(f: PickedFile, accessToken: string, onPr
   try {
     res = await fetch(url, { headers: { Authorization: 'Bearer ' + accessToken } });
   } catch {
-    throw new Error('No internet connection while downloading from Google Drive.');
+    throw new Error(t('No internet connection while downloading from Google Drive.'));
   }
   if (!res.ok) {
     if (res.status === 401) {
       token = null;
-      throw new Error('The Google Drive permission expired. Choose the file again.');
+      throw new Error(t('The Google Drive permission expired. Choose the file again.'));
     }
-    if (res.status === 403 && f.mimeType === GOOGLE_DOC) throw new Error('This Google Doc is too large to convert to Word (Google limit: 10 MB).');
-    throw new Error('Could not be downloaded from Google Drive (error ' + res.status + ').');
+    if (res.status === 403 && f.mimeType === GOOGLE_DOC) throw new Error(t('This Google Doc is too large to convert to Word (Google limit: 10 MB).'));
+    throw new Error(t('Could not be downloaded from Google Drive (error {code}).', { code: res.status }));
   }
   const total = Number(res.headers.get('content-length')) || f.sizeBytes || 0;
   let blob: Blob;

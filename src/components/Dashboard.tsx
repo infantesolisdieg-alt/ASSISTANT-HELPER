@@ -1,5 +1,6 @@
 import { hasAlert } from '../analysis';
 import { HIGH_MATCH_PERCENT } from '../analysis/similarity';
+import { APP_NAME, t, tn } from '../i18n';
 import type { SimilarityStatus } from '../analysis/types';
 import { SAMPLE_SUBMISSIONS } from '../samples';
 import { docLabel, newId, nextPending, useStore } from '../state/store';
@@ -14,9 +15,9 @@ import { STATUS_LABEL, STATUS_TONE } from './tones';
 
 function greeting(): string {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 19) return 'Good afternoon';
-  return 'Good evening';
+  if (h < 12) return t('Good morning');
+  if (h < 19) return t('Good afternoon');
+  return t('Good evening');
 }
 
 function StatCard({ icon, value, label, tone }: { icon: IconName; value: number; label: string; tone: string }) {
@@ -57,7 +58,7 @@ export function Dashboard() {
       notes: [],
     }));
     dispatch({ type: 'addDocs', docs });
-    notify(`${docs.length} sample submissions loaded and analyzed.`);
+    notify(t('{n} sample submissions loaded and analyzed.', { n: docs.length }));
   };
 
   const pending = submissions.filter((d) => d.reviewStatus === 'pending');
@@ -68,9 +69,9 @@ export function Dashboard() {
   const next = nextPending(submissions);
 
   const progress: DonutSegment[] = [
-    { key: 'approved', label: 'Approved', value: approved, tone: 'ok' },
-    { key: 'corrections', label: 'Needs corrections', value: corrections, tone: 'warn' },
-    { key: 'pending', label: 'Pending', value: pending.length, tone: 'neutral' },
+    { key: 'approved', label: t('Approved'), value: approved, tone: 'ok' },
+    { key: 'corrections', label: t('Needs corrections'), value: corrections, tone: 'warn' },
+    { key: 'pending', label: t('Pending'), value: pending.length, tone: 'neutral' },
   ];
 
   const bars = submissions
@@ -83,8 +84,8 @@ export function Dashboard() {
         sublabel: d.assignmentTitle,
         value: a?.similarity.percent ?? 0,
         tone: a ? STATUS_TONE[a.status] : ('neutral' as Tone),
-        statusLabel: a ? STATUS_LABEL[a.status] : '',
-        detail: top ? `Top match: ${docLabel(docById(top.docId))}` : 'No matches',
+        statusLabel: a ? t(STATUS_LABEL[a.status]) : '',
+        detail: top ? t('Top match: {doc}', { doc: docLabel(docById(top.docId)) }) : t('No matches'),
       };
     })
     .sort((x, y) => y.value - x.value);
@@ -103,8 +104,10 @@ export function Dashboard() {
             {greeting()}, {firstName(profile.name)}.
           </h2>
           <p className="muted-text">
-            {profile.group ? `${profile.group} · ` : ''}Review authenticity, format and English writing quality. Files stay in
-            this browser tab only.
+            {profile.group ? `${profile.group} · ` : ''}
+            {profile.uid
+              ? t('Review authenticity, format and English writing quality. Your work is saved to your Google account.')
+              : t('Review authenticity, format and English writing quality. Files stay in this browser tab only.')}
           </p>
         </div>
         {submissions.length > 0 && (
@@ -116,11 +119,11 @@ export function Dashboard() {
           >
             {next ? (
               <>
-                Review next submission <Icon name="arrow" size={18} />
+                {t('Review next submission')} <Icon name="arrow" size={18} />
               </>
             ) : (
               <>
-                <Icon name="check" size={18} /> All submissions reviewed
+                <Icon name="check" size={18} /> {t('All submissions reviewed')}
               </>
             )}
           </button>
@@ -130,35 +133,41 @@ export function Dashboard() {
       {submissions.length === 0 ? (
         <EmptyState
           icon="inbox"
-          title="No submissions in this session yet"
+          title={t('No submissions in this session yet')}
           actions={
             <>
               <button type="button" className="button button-primary" onClick={() => go('upload')}>
-                <Icon name="upload" size={18} /> Upload files
+                <Icon name="upload" size={18} /> {t('Upload files')}
               </button>
               <button type="button" className="button button-secondary" onClick={loadSamples}>
-                Load sample submissions
+                {t('Load sample submissions')}
               </button>
             </>
           }
         >
           <p>
-            Start by uploading your students’ work (.docx, .pdf or .txt). Assistant Helper compares the submissions with each
-            other and with any reference files you choose, checks the format and flags writing and AI indicators.
+            {t(
+              'Start by uploading your students’ work (Word, PDF, text or images). {app} compares the submissions with each other and with any reference files you choose, checks the format and flags writing and AI indicators.',
+              { app: APP_NAME },
+            )}
           </p>
           {staged > 0 && (
             <p className="note-inline">
-              You have {staged} file{staged === 1 ? '' : 's'} waiting on the Upload screen. Press “Analyze” there to see them here.
+              {tn(
+                staged,
+                'You have {n} file waiting on the Upload screen. Press “Analyze” there to see it here.',
+                'You have {n} files waiting on the Upload screen. Press “Analyze” there to see them here.',
+              )}
             </p>
           )}
         </EmptyState>
       ) : (
         <>
-          <section className="stats" aria-label="Session summary">
-            <StatCard icon="inbox" value={submissions.length} label="Submissions loaded" tone="brand" />
-            <StatCard icon="clock" value={pending.length} label="Pending review" tone="neutral" />
-            <StatCard icon="check" value={reviewed} label="Reviewed" tone="ok" />
-            <StatCard icon="alert" value={alerts} label="With alerts" tone={alerts ? 'bad' : 'neutral'} />
+          <section className="stats" aria-label={t('Session summary')}>
+            <StatCard icon="inbox" value={submissions.length} label={t('Submissions loaded')} tone="brand" />
+            <StatCard icon="clock" value={pending.length} label={t('Pending review')} tone="neutral" />
+            <StatCard icon="check" value={reviewed} label={t('Reviewed')} tone="ok" />
+            <StatCard icon="alert" value={alerts} label={t('With alerts')} tone={alerts ? 'bad' : 'neutral'} />
           </section>
 
           {!next && (
@@ -168,14 +177,16 @@ export function Dashboard() {
                 <polyline points="17 29 25 37 40 21" />
               </svg>
               <div>
-                <h2>Session complete</h2>
+                <h2>{t('Session complete')}</h2>
                 <p className="muted-text">
-                  You reviewed all {submissions.length} submissions: {approved} approved and {corrections} need corrections.
-                  Export the reports you need before clearing the temporary files.
+                  {t(
+                    'You reviewed all {n} submissions: {approved} approved and {corrections} need corrections. Export the reports you need before clearing the temporary files.',
+                    { n: submissions.length, approved, corrections },
+                  )}
                 </p>
               </div>
               <button type="button" className="button button-secondary" onClick={() => go('upload')}>
-                <Icon name="upload" size={16} /> Upload more
+                <Icon name="upload" size={16} /> {t('Upload more')}
               </button>
             </section>
           )}
@@ -184,34 +195,34 @@ export function Dashboard() {
 
           <section className="chart-grid">
             <div className="card chart-card">
-              <h2>Review progress</h2>
-              <p className="muted-text small">
-                {reviewed} of {submissions.length} submissions reviewed
-              </p>
+              <h2>{t('Review progress')}</h2>
+              <p className="muted-text small">{t('{done} of {n} submissions reviewed', { done: reviewed, n: submissions.length })}</p>
               <Donut
-                title="Review progress by decision"
+                title={t('Review progress by decision')}
                 segments={progress}
                 centerValue={`${Math.round((reviewed / submissions.length) * 100)}%`}
-                centerLabel="reviewed"
+                centerLabel={t('reviewed')}
               />
             </div>
 
             <div className="card chart-card">
               <div className="chart-head">
                 <div>
-                  <h2>Similarity by submission</h2>
-                  <p className="muted-text small">Click a bar to open that review.</p>
+                  <h2>{t('Similarity by submission')}</h2>
+                  <p className="muted-text small">{t('Click a bar to open that review.')}</p>
                 </div>
                 <ul className="chart-legend">
                   {statusCounts.map(({ s, n }) => (
                     <li key={s}>
                       <span className="legend-swatch" style={{ background: `var(--st-${STATUS_TONE[s]})` }} aria-hidden="true" />
-                      {STATUS_LABEL[s]} <span className="legend-value">{n}</span>
+                      {t(STATUS_LABEL[s])} <span className="legend-value">{n}</span>
                     </li>
                   ))}
                   <li>
                     <span className="legend-line" aria-hidden="true" />
-                    {threshold < HIGH_MATCH_PERCENT ? `Threshold ${threshold}% · High ${HIGH_MATCH_PERCENT}%` : `High match ${HIGH_MATCH_PERCENT}%`}
+                    {threshold < HIGH_MATCH_PERCENT
+                      ? t('Threshold {threshold}% · High {high}%', { threshold, high: HIGH_MATCH_PERCENT })
+                      : t('High match {high}%', { high: HIGH_MATCH_PERCENT })}
                   </li>
                 </ul>
               </div>

@@ -1,16 +1,19 @@
 import { useState } from 'react';
+import { APP_NAME, locale, t, tn } from '../i18n';
 import { useStore, type View } from '../state/store';
 import { initials } from '../types';
 import { Modal } from './common';
 import { Icon, type IconName } from './icons';
 
-const NAV: { view: View; label: string; icon: IconName }[] = [
-  { view: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
-  { view: 'upload', label: 'Upload', icon: 'upload' },
-  { view: 'review', label: 'Submission Review', icon: 'review' },
-  { view: 'plagiarism', label: 'Plagiarism Detector', icon: 'plagiarism' },
-  { view: 'ai', label: 'AI Indicators', icon: 'ai' },
-  { view: 'settings', label: 'Settings', icon: 'settings' },
+import { TITLES } from './Topbar';
+
+const NAV: { view: View; icon: IconName }[] = [
+  { view: 'dashboard', icon: 'dashboard' },
+  { view: 'upload', icon: 'upload' },
+  { view: 'review', icon: 'review' },
+  { view: 'plagiarism', icon: 'plagiarism' },
+  { view: 'ai', icon: 'ai' },
+  { view: 'settings', icon: 'settings' },
 ];
 
 export function Sidebar() {
@@ -23,7 +26,11 @@ export function Sidebar() {
   const clear = () => {
     dispatch({ type: 'clearAll' });
     setConfirm(null);
-    notify(profile.uid ? 'All submissions have been removed from this session and your account.' : 'All files and results have been removed from this session.');
+    notify(
+      profile.uid
+        ? t('All submissions have been removed from this session and your account.')
+        : t('All files and results have been removed from this session.'),
+    );
   };
 
   const cloud = !!profile.uid;
@@ -43,16 +50,16 @@ export function Sidebar() {
   };
 
   const status = state.cloud;
-  const savedAgo = status.savedAt ? new Date(status.savedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '';
+  const savedAgo = status.savedAt ? new Date(status.savedAt).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }) : '';
 
   return (
     <aside className="sidebar">
       <div className="brand">
         <img className="brand-logo" src="/logo-mark.svg" alt="" width="40" height="40" />
-        <span className="brand-name">Assistant Helper</span>
+        <span className="brand-name">{APP_NAME}</span>
       </div>
 
-      <nav aria-label="Main navigation">
+      <nav aria-label={t('Main navigation')}>
         <ul className="nav-list">
           {NAV.map((item) => (
             <li key={item.view}>
@@ -63,9 +70,9 @@ export function Sidebar() {
                 onClick={() => go(item.view)}
               >
                 <Icon name={item.icon} />
-                <span className="nav-label">{item.label}</span>
+                <span className="nav-label">{t(TITLES[item.view])}</span>
                 {item.view === 'review' && pending > 0 && (
-                  <span className="nav-count" aria-label={`${pending} pending`}>
+                  <span className="nav-count" aria-label={t('{n} pending', { n: pending })}>
                     {pending}
                   </span>
                 )}
@@ -77,34 +84,35 @@ export function Sidebar() {
 
       <div className="sidebar-bottom">
         <div className="session-box">
-          <p className="session-title">{cloud ? 'Your account' : 'Session files'}</p>
+          <p className="session-title">{cloud ? t('Your account') : t('Session files')}</p>
           {cloud ? (
             <p className={`cloud-status cloud-${status.state}`} role="status">
               {status.state === 'saving' ? (
                 <>
-                  <span className="spinner" aria-hidden="true" /> Saving…
+                  <span className="spinner" aria-hidden="true" /> {t('Saving…')}
                 </>
               ) : status.state === 'error' ? (
                 <>
-                  <Icon name="alert" size={14} /> <span>{status.message || 'Could not save.'}</span>
+                  <Icon name="alert" size={14} /> <span>{status.message || t('Could not save.')}</span>
                   <button type="button" className="button button-link cloud-retry" onClick={() => dispatch({ type: 'cloudRetry' })}>
-                    Retry
+                    {t('Retry')}
                   </button>
                 </>
               ) : (
                 <>
-                  <Icon name="check" size={14} /> Saved to your Google account{savedAgo ? ` · ${savedAgo}` : ''}
+                  <Icon name="check" size={14} /> {t('Saved to your Google account')}
+                  {savedAgo ? ` · ${savedAgo}` : ''}
                 </>
               )}
             </p>
           ) : (
             <p className="session-text">
-              {fileCount === 0 ? 'No files loaded.' : `${fileCount} file${fileCount === 1 ? '' : 's'} in memory.`} Nothing is saved
-              on a server.
+              {fileCount === 0 ? t('No files loaded.') : tn(fileCount, '{n} file in memory.', '{n} files in memory.')}{' '}
+              {t('Nothing is saved on a server.')}
             </p>
           )}
           <button type="button" className="button button-secondary full" onClick={() => setConfirm('clear')}>
-            <Icon name="trash" size={16} /> {cloud ? 'Clear all submissions' : 'Clear temporary files'}
+            <Icon name="trash" size={16} /> {cloud ? t('Clear all submissions') : t('Clear temporary files')}
           </button>
         </div>
 
@@ -125,8 +133,8 @@ export function Sidebar() {
           <button
             type="button"
             className="icon-button profile-switch"
-            aria-label={cloud ? 'Sign out' : 'Change teacher'}
-            title={cloud ? 'Sign out' : 'Change teacher'}
+            aria-label={cloud ? t('Sign out') : t('Change teacher')}
+            title={cloud ? t('Sign out') : t('Change teacher')}
             onClick={() => (fileCount > 0 || cloud ? setConfirm('switch') : switchTeacher())}
           >
             <Icon name="logout" size={18} />
@@ -136,46 +144,55 @@ export function Sidebar() {
 
       {confirm === 'clear' && (
         <Modal
-          title={cloud ? 'Clear all submissions?' : 'Clear temporary files?'}
+          title={cloud ? t('Clear all submissions?') : t('Clear temporary files?')}
           onClose={() => setConfirm(null)}
           footer={
             <>
               <button type="button" className="button button-secondary" onClick={() => setConfirm(null)}>
-                Cancel
+                {t('Cancel')}
               </button>
               <button type="button" className="button button-danger" onClick={clear}>
-                Clear all files
+                {t('Clear all files')}
               </button>
             </>
           }
         >
           <p>
             {cloud
-              ? 'This removes every submission, result, teacher note and review decision from this screen and from your Google account. This cannot be undone. Your profile and criteria are kept.'
-              : 'This removes every uploaded document, analysis result, teacher note and review decision from this session. This cannot be undone. Your criteria in Settings are kept.'}
+              ? t(
+                  'This removes every submission, result, teacher note and review decision from this screen and from your Google account. This cannot be undone. Your profile and criteria are kept.',
+                )
+              : t(
+                  'This removes every uploaded document, analysis result, teacher note and review decision from this session. This cannot be undone. Your criteria in Settings are kept.',
+                )}
           </p>
         </Modal>
       )}
 
       {confirm === 'switch' && (
         <Modal
-          title={cloud ? 'Sign out?' : 'Change teacher?'}
+          title={cloud ? t('Sign out?') : t('Change teacher?')}
           onClose={() => setConfirm(null)}
           footer={
             <>
               <button type="button" className="button button-secondary" onClick={() => setConfirm(null)}>
-                Cancel
+                {t('Cancel')}
               </button>
               <button type="button" className="button button-danger" onClick={switchTeacher}>
-                {cloud ? 'Sign out' : 'End session'}
+                {cloud ? t('Sign out') : t('End session')}
               </button>
             </>
           }
         >
           <p>
             {cloud
-              ? `Your submissions, groups and reviews stay saved in ${profile.email || 'your Google account'}. Sign in again any time to continue.${state.cloud.state === 'error' ? ' Warning: the latest changes could not be saved yet.' : ''}`
-              : `This ends the session for ${profile.name}. All files, results, notes and settings are removed so the next teacher starts with a clean session. Export your settings first if you want to keep them.`}
+              ? t('Your submissions, groups and reviews stay saved in {account}. Sign in again any time to continue.', {
+                  account: profile.email || t('your Google account'),
+                }) + (state.cloud.state === 'error' ? ' ' + t('Warning: the latest changes could not be saved yet.') : '')
+              : t(
+                  'This ends the session for {name}. All files, results, notes and settings are removed so the next teacher starts with a clean session. Export your settings first if you want to keep them.',
+                  { name: profile.name },
+                )}
           </p>
         </Modal>
       )}

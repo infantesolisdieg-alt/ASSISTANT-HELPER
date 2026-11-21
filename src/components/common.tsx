@@ -3,33 +3,36 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { AiLevel, CheckOutcome, SimilarityStatus } from '../analysis/types';
+import { t, tk } from '../i18n';
 import { REVIEW_LABEL, type ReviewStatus } from '../types';
 import { Icon, type IconName } from './icons';
 
-const STATUS_LABEL: Record<SimilarityStatus, string> = { clear: 'Clear', review: 'Review', high: 'High match' };
+export const STATUS_LABEL: Record<SimilarityStatus, string> = { clear: tk('Clear'), review: tk('Review'), high: tk('High match') };
 const STATUS_TONE: Record<SimilarityStatus, string> = { clear: 'ok', review: 'warn', high: 'bad' };
 
 export function SimilarityBadge({ status }: { status: SimilarityStatus }) {
-  return <span className={`badge badge-${STATUS_TONE[status]}`}>{STATUS_LABEL[status]}</span>;
+  return <span className={`badge badge-${STATUS_TONE[status]}`}>{t(STATUS_LABEL[status])}</span>;
 }
 
-const OUTCOME_LABEL: Record<CheckOutcome, string> = { passed: 'Passed', review: 'Review', failed: 'Failed', na: 'N/A' };
+export const OUTCOME_LABEL: Record<CheckOutcome, string> = { passed: tk('Passed'), review: tk('Review'), failed: tk('Failed'), na: tk('N/A') };
 const OUTCOME_TONE: Record<CheckOutcome, string> = { passed: 'ok', review: 'warn', failed: 'bad', na: 'muted' };
 
 export function OutcomeBadge({ outcome }: { outcome: CheckOutcome }) {
-  return <span className={`badge badge-${OUTCOME_TONE[outcome]}`}>{OUTCOME_LABEL[outcome]}</span>;
+  return <span className={`badge badge-${OUTCOME_TONE[outcome]}`}>{t(OUTCOME_LABEL[outcome])}</span>;
 }
 
 const AI_TONE: Record<AiLevel, string> = { Low: 'ok', Moderate: 'warn', Elevated: 'bad' };
+/** Nivel de IA traducido (los valores internos siguen en inglés). */
+export const AI_LEVEL_LABEL: Record<AiLevel, string> = { Low: tk('Low'), Moderate: tk('Moderate'), Elevated: tk('Elevated') };
 
 export function AiBadge({ level }: { level: AiLevel }) {
-  return <span className={`badge badge-${AI_TONE[level]}`}>{level}</span>;
+  return <span className={`badge badge-${AI_TONE[level]}`}>{t(AI_LEVEL_LABEL[level])}</span>;
 }
 
 const REVIEW_TONE: Record<ReviewStatus, string> = { pending: 'muted', approved: 'ok', 'needs-corrections': 'warn' };
 
 export function ReviewBadge({ status }: { status: ReviewStatus }) {
-  return <span className={`badge badge-${REVIEW_TONE[status]}`}>{REVIEW_LABEL[status]}</span>;
+  return <span className={`badge badge-${REVIEW_TONE[status]}`}>{t(REVIEW_LABEL[status])}</span>;
 }
 
 export function Modal({
@@ -83,7 +86,7 @@ export function Modal({
       <div className={`modal${wide ? ' modal-wide' : ''}`} role="dialog" aria-modal="true" aria-labelledby="modal-title" ref={ref}>
         <div className="modal-header">
           <h2 id="modal-title">{title}</h2>
-          <button type="button" className="icon-button modal-close" aria-label="Close dialog" onClick={onClose}>
+          <button type="button" className="icon-button modal-close" aria-label={t('Close dialog')} onClick={onClose}>
             ×
           </button>
         </div>
@@ -123,5 +126,5 @@ export function percentText(p: number): string {
 }
 
 export function kindLabel(kind: string): string {
-  return kind === 'image' ? 'image' : '.' + kind;
+  return kind === 'image' ? t('image') : '.' + kind;
 }

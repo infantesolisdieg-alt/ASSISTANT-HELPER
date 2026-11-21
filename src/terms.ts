@@ -2,8 +2,14 @@
 // también se muestra dentro de la app). Si cambia algo importante, se sube la versión y la app
 // vuelve a pedir la aceptación a todos.
 
+import { getLang } from './i18n';
+
 export const TERMS_VERSION = '2026-11-20';
-export const TERMS_URL = '/terms.html';
+
+/** Página de términos en el idioma actual (terms.html en inglés, terms-es.html en español). */
+export function termsUrl(): string {
+  return getLang() === 'es' ? '/terms-es.html' : '/terms.html';
+}
 
 /** Aceptación hecha en la bienvenida antes de entrar con Google (se guarda al cargar la cuenta). */
 let accepted: { version: string; at: number } | null = null;

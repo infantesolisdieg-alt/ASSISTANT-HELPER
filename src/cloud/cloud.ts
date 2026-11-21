@@ -5,6 +5,7 @@
 //   users/{uid}                     → perfil y configuración
 //   users/{uid}/submissions/{docId} → cada trabajo analizado
 
+import { t } from '../i18n';
 import { firebaseConfig } from './config';
 import type { CloudAccount, CloudSubmission } from './serialize';
 
@@ -57,15 +58,15 @@ export async function watchAuth(cb: (user: CloudUser | null) => void): Promise<(
 export function friendlyError(e: unknown): string {
   const code = (e as { code?: string })?.code ?? '';
   if (code.includes('popup-closed') || code.includes('cancelled-popup')) return '';
-  if (code.includes('popup-blocked')) return 'The browser blocked the Google window. Allow pop-ups for this site and try again.';
+  if (code.includes('popup-blocked')) return t('The browser blocked the Google window. Allow pop-ups for this site and try again.');
   if (code.includes('unauthorized-domain'))
-    return 'This website is not authorized in Firebase yet. Add it under Authentication → Settings → Authorized domains.';
-  if (code.includes('network-request-failed') || code.includes('unavailable')) return 'No internet connection. Check your connection and try again.';
-  if (code.includes('permission-denied')) return 'Firebase rejected the request. Check the Firestore security rules.';
+    return t('This website is not authorized in Firebase yet. Add it under Authentication → Settings → Authorized domains.');
+  if (code.includes('network-request-failed') || code.includes('unavailable')) return t('No internet connection. Check your connection and try again.');
+  if (code.includes('permission-denied')) return t('Firebase rejected the request. Check the Firestore security rules.');
   if (code.includes('resource-exhausted') || code.includes('quota'))
-    return 'The free daily limit of the cloud was reached. Your work is kept on this screen; saving will continue tomorrow.';
-  if (code.includes('operation-not-allowed')) return 'Google sign-in is not enabled in Firebase (Authentication → Sign-in method).';
-  return e instanceof Error ? e.message : 'Something went wrong with the cloud.';
+    return t('The free daily limit of the cloud was reached. Your work is kept on this screen; saving will continue tomorrow.');
+  if (code.includes('operation-not-allowed')) return t('Google sign-in is not enabled in Firebase (Authentication → Sign-in method).');
+  return e instanceof Error ? e.message : t('Something went wrong with the cloud.');
 }
 
 export async function signInWithGoogle(): Promise<void> {

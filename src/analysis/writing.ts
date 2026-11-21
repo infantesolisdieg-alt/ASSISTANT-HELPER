@@ -1,5 +1,6 @@
 // Calidad de redacción en inglés: voz pasiva, oraciones demasiado largas y palabras repetidas.
 
+import { t, tn } from '../i18n';
 import type { Settings } from '../settings';
 import { splitSentences, STOPWORDS, tokenize, truncate } from './text';
 import type { CheckResult } from './types';
@@ -68,12 +69,14 @@ export function runWritingChecks(text: string, settings: Settings): CheckResult[
     const ratio = sentences.length ? passive.length / sentences.length : 0;
     out.push({
       id: 'passiveVoice',
-      name: 'Passive voice',
+      name: t('Passive voice'),
       outcome: ratio <= 0.2 ? 'passed' : 'review',
       detail:
         passive.length === 0
-          ? 'No passive constructions found.'
-          : `${passive.length} sentence(s) with passive voice (${Math.round(ratio * 100)}% of sentences).`,
+          ? t('No passive constructions found.')
+          : tn(passive.length, '{n} sentence with passive voice ({p}% of sentences).', '{n} sentences with passive voice ({p}% of sentences).', {
+              p: Math.round(ratio * 100),
+            }),
       instances: passive.slice(0, 10).map((s) => truncate(s)),
       group: 'writing',
     });
@@ -83,10 +86,13 @@ export function runWritingChecks(text: string, settings: Settings): CheckResult[
     const long = findLongSentences(text);
     out.push({
       id: 'longSentences',
-      name: `Long sentences (> ${LONG_SENTENCE_WORDS} words)`,
+      name: t('Long sentences (> {max} words)', { max: LONG_SENTENCE_WORDS }),
       outcome: long.length === 0 ? 'passed' : 'review',
-      detail: long.length === 0 ? 'No overly long sentences.' : `${long.length} sentence(s) longer than ${LONG_SENTENCE_WORDS} words.`,
-      instances: long.slice(0, 10).map((s) => `${s.words} words: ${truncate(s.text)}`),
+      detail:
+        long.length === 0
+          ? t('No overly long sentences.')
+          : tn(long.length, '{n} sentence longer than {max} words.', '{n} sentences longer than {max} words.', { max: LONG_SENTENCE_WORDS }),
+      instances: long.slice(0, 10).map((s) => t('{words} words: {text}', { words: s.words, text: truncate(s.text) })),
       group: 'writing',
     });
   }
@@ -95,12 +101,14 @@ export function runWritingChecks(text: string, settings: Settings): CheckResult[
     const rep = findRepeatedWords(text);
     out.push({
       id: 'repeatedWords',
-      name: 'Repeated words',
+      name: t('Repeated words'),
       outcome: rep.length <= 2 ? 'passed' : 'review',
       detail:
         rep.length === 0
-          ? 'No words repeated close together.'
-          : `${rep.length} word(s) repeated within ${REPEAT_WINDOW} words of each other.`,
+          ? t('No words repeated close together.')
+          : tn(rep.length, '{n} word repeated within {window} words of itself.', '{n} words repeated within {window} words of each other.', {
+              window: REPEAT_WINDOW,
+            }),
       instances: rep.slice(0, 10).map((r) => `“${r.word}”: ${truncate(r.context, 110)}`),
       group: 'writing',
     });

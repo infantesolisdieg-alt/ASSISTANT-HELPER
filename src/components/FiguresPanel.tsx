@@ -2,6 +2,7 @@
 // a petición, para revisar el texto que contienen (títulos, ejes, datos de una gráfica escaneada).
 
 import { useState } from 'react';
+import { t, tn } from '../i18n';
 import { useStore } from '../state/store';
 import type { DocItem } from '../types';
 import { Icon } from './icons';
@@ -26,14 +27,14 @@ export function FiguresPanel({ doc }: { doc: DocItem }) {
       const { ocrImage } = await import('../extract/ocr');
       const res = await ocrImage(fig.src, 1, 1, setProgress);
       if (!hasDoc(doc.id)) return;
-      const text = res.text.trim() || 'No text was found in this image.';
+      const text = res.text.trim() || t('No text was found in this image.');
       dispatch({
         type: 'updateDoc',
         id: doc.id,
         patch: { figures: figures.map((f, k) => (k === i ? { ...f, ocrText: text } : f)) },
       });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'The text in this image could not be read.');
+      setError(e instanceof Error ? e.message : t('The text in this image could not be read.'));
     } finally {
       setReading(null);
     }
@@ -41,31 +42,30 @@ export function FiguresPanel({ doc }: { doc: DocItem }) {
 
   return (
     <section className="card result-section" aria-labelledby="fig-title">
-      <h3 id="fig-title">Tables, figures &amp; charts</h3>
+      <h3 id="fig-title">{t('Tables, figures & charts')}</h3>
       <p className="small muted-text">
-        {tables.length} table{tables.length === 1 ? '' : 's'} · {figures.filter((f) => f.kind === 'image').length} image
-        {figures.filter((f) => f.kind === 'image').length === 1 ? '' : 's'} · {figures.filter((f) => f.kind === 'chart').length} chart
-        {figures.filter((f) => f.kind === 'chart').length === 1 ? '' : 's'}
+        {tn(tables.length, '{n} table', '{n} tables')} · {tn(figures.filter((f) => f.kind === 'image').length, '{n} image', '{n} images')} ·{' '}
+        {tn(figures.filter((f) => f.kind === 'chart').length, '{n} chart', '{n} charts')}
       </p>
 
       {tables.length > 0 && (
         <div className="fig-group">
-          <h4>Tables</h4>
+          <h4>{t('Tables')}</h4>
           <ul className="fig-list">
-            {tables.map((t, i) => (
+            {tables.map((tb, i) => (
               <li key={i} className="fig-item">
                 <div className="fig-head">
                   <span className="fig-icon" aria-hidden="true">
                     <Icon name="dashboard" size={16} />
                   </span>
-                  <span className="fig-caption">{t.caption ?? <em>Untitled table {i + 1}</em>}</span>
-                  {t.page && <span className="file-chip">p. {t.page}</span>}
+                  <span className="fig-caption">{tb.caption ?? <em>{t('Untitled table {n}', { n: i + 1 })}</em>}</span>
+                  {tb.page && <span className="file-chip">{t('p. {n}', { n: tb.page })}</span>}
                 </div>
-                {t.rows.length > 0 ? (
+                {tb.rows.length > 0 ? (
                   <div className="mini-table-wrap">
                     <table className="mini-table">
                       <tbody>
-                        {t.rows.slice(0, 4).map((r, ri) => (
+                        {tb.rows.slice(0, 4).map((r, ri) => (
                           <tr key={ri}>
                             {r.slice(0, 5).map((c, ci) => {
                               const Cell = ri === 0 ? 'th' : 'td';
@@ -76,13 +76,13 @@ export function FiguresPanel({ doc }: { doc: DocItem }) {
                       </tbody>
                     </table>
                     <p className="small muted-text">
-                      {t.rows.length} row{t.rows.length === 1 ? '' : 's'} × {Math.max(...t.rows.map((r) => r.length))} column
-                      {Math.max(...t.rows.map((r) => r.length)) === 1 ? '' : 's'}
-                      {t.rows.length > 4 ? ' · showing the first 4 rows' : ''}
+                      {tn(tb.rows.length, '{n} row', '{n} rows')} ×{' '}
+                      {tn(Math.max(...tb.rows.map((r) => r.length)), '{n} column', '{n} columns')}
+                      {tb.rows.length > 4 ? ` · ${t('showing the first 4 rows')}` : ''}
                     </p>
                   </div>
                 ) : (
-                  <p className="small muted-text">Found by its title. Open the Original view to see it on the page.</p>
+                  <p className="small muted-text">{t('Found by its title. Open the Original view to see it on the page.')}</p>
                 )}
               </li>
             ))}
@@ -92,7 +92,7 @@ export function FiguresPanel({ doc }: { doc: DocItem }) {
 
       {figures.length > 0 && (
         <div className="fig-group">
-          <h4>Figures &amp; charts</h4>
+          <h4>{t('Figures & charts')}</h4>
           <ul className="fig-list">
             {figures.map((f, i) => (
               <li key={i} className="fig-item">
@@ -100,17 +100,19 @@ export function FiguresPanel({ doc }: { doc: DocItem }) {
                   <span className="fig-icon" aria-hidden="true">
                     <Icon name={f.kind === 'chart' ? 'ai' : 'review'} size={16} />
                   </span>
-                  <span className="fig-caption">{f.caption ?? <em>Untitled {f.kind === 'chart' ? 'chart' : 'figure'} {i + 1}</em>}</span>
-                  {f.page && <span className="file-chip">p. {f.page}</span>}
+                  <span className="fig-caption">
+                    {f.caption ?? <em>{f.kind === 'chart' ? t('Untitled chart {n}', { n: i + 1 }) : t('Untitled figure {n}', { n: i + 1 })}</em>}
+                  </span>
+                  {f.page && <span className="file-chip">{t('p. {n}', { n: f.page })}</span>}
                 </div>
                 {f.kind === 'chart' && f.chart && <ChartPreview chart={f.chart} />}
                 {f.kind === 'image' && f.src && (
                   <div className="fig-image">
-                    <img src={f.src} alt={f.caption ?? `Figure ${i + 1}`} loading="lazy" />
+                    <img src={f.src} alt={f.caption ?? t('Figure {n}', { n: i + 1 })} loading="lazy" />
                     <div className="fig-actions">
                       {f.ocrText ? (
                         <details className="check-instances" open>
-                          <summary>Text found in the image</summary>
+                          <summary>{t('Text found in the image')}</summary>
                           <p className="ocr-text">{f.ocrText}</p>
                         </details>
                       ) : (
@@ -122,11 +124,11 @@ export function FiguresPanel({ doc }: { doc: DocItem }) {
                         >
                           {reading === i ? (
                             <>
-                              <span className="spinner" aria-hidden="true" /> Reading… {Math.round(progress * 100)}%
+                              <span className="spinner" aria-hidden="true" /> {t('Reading… {p}%', { p: Math.round(progress * 100) })}
                             </>
                           ) : (
                             <>
-                              <Icon name="pen" size={14} /> Read text in image
+                              <Icon name="pen" size={14} /> {t('Read text in image')}
                             </>
                           )}
                         </button>
@@ -136,7 +138,9 @@ export function FiguresPanel({ doc }: { doc: DocItem }) {
                 )}
                 {f.kind === 'image' && !f.src && (
                   <p className="small muted-text">
-                    {doc.kind === 'pdf' ? 'Image found on this page. Open the Original view to see it.' : 'This image format cannot be previewed.'}
+                    {doc.kind === 'pdf'
+                      ? t('Image found on this page. Open the Original view to see it.')
+                      : t('This image format cannot be previewed.')}
                   </p>
                 )}
               </li>

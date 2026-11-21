@@ -1,21 +1,22 @@
+import { locale, t, tk } from '../i18n';
 import { useStore, type View } from '../state/store';
 
-const TITLES: Record<View, string> = {
-  dashboard: 'Dashboard',
-  upload: 'Upload',
-  review: 'Submission Review',
-  plagiarism: 'Plagiarism Detector',
-  ai: 'AI Indicators',
-  settings: 'Settings',
+export const TITLES: Record<View, string> = {
+  dashboard: tk('Dashboard'),
+  upload: tk('Upload'),
+  review: tk('Submission Review'),
+  plagiarism: tk('Plagiarism Detector'),
+  ai: tk('AI Indicators'),
+  settings: tk('Settings'),
 };
 
 const SUBTITLES: Record<View, string> = {
-  dashboard: 'Overview of this session',
-  upload: 'Add submissions and reference files',
-  review: 'Read, check and decide',
-  plagiarism: 'Compare documents within this session',
-  ai: 'Advisory writing signals',
-  settings: 'Criteria and custom rules',
+  dashboard: tk('Overview of this session'),
+  upload: tk('Add submissions and reference files'),
+  review: tk('Read, check and decide'),
+  plagiarism: tk('Compare documents within this session'),
+  ai: tk('Advisory writing signals'),
+  settings: tk('Criteria and custom rules'),
 };
 
 // Flujo principal en 3 pasos: Upload → Review → Complete
@@ -24,18 +25,18 @@ export function Topbar() {
   const reviewed = submissions.filter((d) => d.reviewStatus !== 'pending').length;
   const allDone = submissions.length > 0 && reviewed === submissions.length;
   const step = submissions.length === 0 ? 1 : allDone ? 3 : 2;
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const today = new Date().toLocaleDateString(locale(), { weekday: 'long', month: 'long', day: 'numeric' });
 
-  const steps = ['Upload', 'Review', 'Complete'];
+  const steps = [t('Upload'), t('Review'), t('Complete')];
   return (
     <header className="topbar">
       <div className="topbar-heading">
-        <h1 className="topbar-title">{TITLES[state.view]}</h1>
+        <h1 className="topbar-title">{t(TITLES[state.view])}</h1>
         <p className="topbar-sub">
-          {SUBTITLES[state.view]} · {today}
+          {t(SUBTITLES[state.view])} · {today}
         </p>
       </div>
-      <ol className="steps" aria-label="Workflow progress">
+      <ol className="steps" aria-label={t('Workflow progress')}>
         {steps.map((label, i) => {
           const n = i + 1;
           const status = n < step || allDone ? 'done' : n === step ? 'current' : 'todo';
