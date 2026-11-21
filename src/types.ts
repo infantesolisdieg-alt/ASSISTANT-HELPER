@@ -43,6 +43,8 @@ export interface DocItem {
   fileName: string;
   kind: FileKind;
   fileSize?: number;
+  /** De dónde se subió el archivo (para mostrar el icono en Upload). */
+  source?: 'computer' | 'drive';
   studentName: string;
   /** Grupo del alumno (por ejemplo "5A"). Vacío si no se indicó. */
   group: string;
