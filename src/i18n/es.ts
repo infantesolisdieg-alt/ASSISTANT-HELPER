@@ -22,6 +22,12 @@ export const ES: Record<string, string> = {
   'Main navigation': 'Navegación principal',
   '{n} pending': '{n} pendientes',
 
+  Menu: 'Menú',
+  'Open menu': 'Abrir menú',
+  'Close menu': 'Cerrar menú',
+  Plagiarism: 'Plagio',
+  AI: 'IA',
+
   /* ---------- Barra lateral ---------- */
   'Your account': 'Su cuenta',
   'Session files': 'Archivos de la sesión',
@@ -558,6 +564,9 @@ export const ES: Record<string, string> = {
   'Accepted formats': 'Formatos aceptados',
   'Up to {mb} MB per file · scanned PDFs and images are read with OCR': 'Hasta {mb} MB por archivo · los PDF escaneados y las imágenes se leen con OCR',
   'This computer': 'Esta computadora',
+  'This device': 'Este dispositivo',
+  'Tap to choose files': 'Toque para elegir archivos',
+  'Word, PDF, text or image files saved on this device.': 'Archivos de Word, PDF, texto o imágenes guardados en este dispositivo.',
   'Word, PDF, text or image files saved on this computer.': 'Archivos de Word, PDF, texto o imágenes guardados en esta computadora.',
   'Choose files': 'Elegir archivos',
   'My Drive, files shared with you and shared drives. Google Docs become Word files.':

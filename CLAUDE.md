@@ -23,8 +23,7 @@ orientativos). Interfaz bilingüe inglés/español (desde v1.8); comentarios del
 
 - Sin backend propio ni servicios de pago. El análisis se hace en el navegador. Desde v1.4 hay nube opcional (Firebase Spark, gratis) solo para guardar datos de cada cuenta.
 - Sin cuenta: nada se guarda (memoria). Con cuenta de Google: texto, resultados, grupos, perfil y configuración se guardan en Firestore del usuario; los archivos originales nunca se suben.
-- No comparar contra internet. No offline/service worker. No soporte para celular: en < 1024 px
-  se muestra "ASSISTANT HELPER is available on desktop computers only." (o su versión en español).
+- No comparar contra internet. No offline/service worker. Desde v1.9 sí funciona en celular y tableta (< 1024 px) con diseño móvil; en computadora el diseño no cambia.
 - **El nombre de la app nunca se traduce y siempre va en MAYÚSCULAS: `APP_NAME` = "ASSISTANT HELPER"** (src/i18n). Todo texto visible pasa por `t()`.
 - `<html translate="no">` + `<meta name="google" content="notranslate">`; el atributo `lang` cambia con el idioma elegido.
 - Estilo formal en tonos de rojo (#8B1E2D, #4A0D16, #F6E7E9…), serif Libre Baskerville para
@@ -57,6 +56,7 @@ orientativos). Interfaz bilingüe inglés/español (desde v1.8); comentarios del
 - **Selector de Drive (v1.7):** el contenido del Google Picker es un iframe de Google y no se puede rediseñar; se cambió lo posible: vista de lista (las miniaturas salían vacías con drive.file), pestaña Starred, título, fondo y marco rojo (`.picker-dialog` en styles.css) y un letrero de la app encima (`showBanner` en drive.ts).
 - Corregido: regex sin barra en Settings (`/s+/` quitaba las "s" del nombre, "Solis" → "Soli").
 - **Idioma inglés/español (v1.8, 2026-11-20):** el usuario pidió elegir idioma al registrarse, traducir todo según la opción, nunca traducir el título y ponerlo en mayúsculas en todos lados, y que el texto del login cambie solo entre español e inglés. Sistema propio sin librerías en `src/i18n/`: `t('texto en inglés', {vars})` (el inglés es la clave), `tn(n, singular, plural)`, `tk()` para listas fijas, `tRich()` para oraciones con <strong>, `tIn(lang, …)`; diccionario `es.ts` (formal, "usted"). La prueba `i18n.test.ts` falla si un texto de t()/tk()/tn() no tiene traducción. El idioma vive en el estado (`state.lang`, primera visita = idioma del navegador) y con cuenta se guarda en `users/{uid}.profile.lang`; sin cuenta solo en memoria. Se cambia en la bienvenida (English/Español) y en Configuración → Su perfil → Idioma. Los análisis se recalculan al cambiar de idioma. La bienvenida dibuja las dos versiones del texto encimadas y alterna cada 6 s con fundido y palabras escalonadas (botón de pausa; con "reducir movimiento" solo fundido). Términos en español: `public/terms-es.html` (mantenerlo igual que terms.html). El selector de Google Drive usa `setLocale` con el idioma. Los ejemplos de títulos de figuras ("Table 1") siguen en inglés porque es el idioma del documento del alumno.
+- **Celular y tableta (v1.9, 2026-11-24):** el usuario pidió, como plus, que funcione en celular con un diseño como una app móvil (imagen de referencia: encabezado rojo con saludo, tarjetas y barra de pestañas abajo). Por debajo de 1024 px: encabezado rojo con logo, título y avatar (abre la barra lateral como panel deslizable, se cierra con el fondo, Escape o al navegar); barra de 5 pestañas abajo (`MobileNav.tsx`: Panel, Subir, Revisar, Plagio, IA; Configuración y la cuenta están en el panel); el saludo del Panel es un bloque rojo con el botón blanco; rejillas en una columna; tablas como tarjetas con el nombre de columna (`useTableLabels` copia el texto de cada th a `data-label`); ventanas como hojas desde abajo; en pantallas táctiles Subir dice "Toque para elegir archivos" / "Este dispositivo". Estilos en la sección v1.9 al final de styles.css. Se quitó el aviso de solo computadora. Revisado sin desbordes a 375, 768, 1024 y 1440 px.
 - Avisar a la Product Owner: la bienvenida no es un login real y las animaciones son discretas.
 
 ## Estructura
@@ -84,7 +84,7 @@ src/samples.ts       5 entregas de ejemplo (dos cartas comparten párrafos; el m
 ## Forma de trabajar que funcionó
 
 - Antes de entregar: `npm test`, `npm run build` y revisar en el navegador las 6 pantallas a
-  1024 px y 1440 px buscando elementos que se salgan del ancho (hubo desbordes en Dashboard).
+  375 px (celular), 768 px, 1024 px y 1440 px buscando elementos que se salgan del ancho (hubo desbordes en Dashboard).
 - Los modales se renderizan con portal a `<body>` (la barra lateral es sticky y los tapaba).
 - Si el panel del navegador está oculto, las animaciones se pausan: no confiar en capturas para
   juzgar animaciones; verificar con JavaScript y pedir al usuario que lo vea.

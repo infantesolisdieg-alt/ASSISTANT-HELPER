@@ -1,5 +1,7 @@
 import { locale, t, tk } from '../i18n';
+import { useState } from 'react';
 import { useStore, type View } from '../state/store';
+import { initials } from '../types';
 
 export const TITLES: Record<View, string> = {
   dashboard: tk('Dashboard'),
@@ -20,8 +22,10 @@ const SUBTITLES: Record<View, string> = {
 };
 
 // Flujo principal en 3 pasos: Upload → Review → Complete
-export function Topbar() {
+export function Topbar({ onMenu }: { onMenu?: () => void }) {
   const { state, submissions } = useStore();
+  const [photoOk, setPhotoOk] = useState(true);
+  const profile = state.profile;
   const reviewed = submissions.filter((d) => d.reviewStatus !== 'pending').length;
   const allDone = submissions.length > 0 && reviewed === submissions.length;
   const step = submissions.length === 0 ? 1 : allDone ? 3 : 2;
@@ -30,6 +34,7 @@ export function Topbar() {
   const steps = [t('Upload'), t('Review'), t('Complete')];
   return (
     <header className="topbar">
+      <img className="topbar-logo" src="/logo-mark.svg" alt="" width="32" height="32" />
       <div className="topbar-heading">
         <h1 className="topbar-title">{t(TITLES[state.view])}</h1>
         <p className="topbar-sub">
@@ -51,6 +56,17 @@ export function Topbar() {
           );
         })}
       </ol>
+      {profile && (
+        <button type="button" className="topbar-menu" onClick={onMenu} aria-label={t('Open menu')} title={t('Open menu')}>
+          {profile.photoURL && photoOk ? (
+            <img className="avatar avatar-photo" src={profile.photoURL} alt="" referrerPolicy="no-referrer" onError={() => setPhotoOk(false)} />
+          ) : (
+            <span className="avatar" aria-hidden="true">
+              {initials(profile.name)}
+            </span>
+          )}
+        </button>
+      )}
     </header>
   );
 }

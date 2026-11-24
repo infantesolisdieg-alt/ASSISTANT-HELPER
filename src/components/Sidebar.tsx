@@ -16,7 +16,7 @@ const NAV: { view: View; icon: IconName }[] = [
   { view: 'settings', icon: 'settings' },
 ];
 
-export function Sidebar() {
+export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: () => void }) {
   const { state, dispatch, submissions, go, notify } = useStore();
   const [confirm, setConfirm] = useState<'clear' | 'switch' | null>(null);
   const fileCount = state.docs.length;
@@ -53,7 +53,12 @@ export function Sidebar() {
   const savedAgo = status.savedAt ? new Date(status.savedAt).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }) : '';
 
   return (
-    <aside className="sidebar">
+    <>
+    {open && <div className="sidebar-backdrop" onClick={onClose} aria-hidden="true" />}
+    <aside className={`sidebar${open ? ' is-open' : ''}`} aria-label={t('Menu')}>
+      <button type="button" className="icon-button sidebar-close" aria-label={t('Close menu')} onClick={onClose}>
+        ×
+      </button>
       <div className="brand">
         <img className="brand-logo" src="/logo-mark.svg" alt="" width="40" height="40" />
         <span className="brand-name">{APP_NAME}</span>
@@ -67,7 +72,10 @@ export function Sidebar() {
                 type="button"
                 className={`nav-item${state.view === item.view ? ' active' : ''}`}
                 aria-current={state.view === item.view ? 'page' : undefined}
-                onClick={() => go(item.view)}
+                onClick={() => {
+                  go(item.view);
+                  onClose?.();
+                }}
               >
                 <Icon name={item.icon} />
                 <span className="nav-label">{t(TITLES[item.view])}</span>
@@ -197,5 +205,6 @@ export function Sidebar() {
         </Modal>
       )}
     </aside>
+    </>
   );
 }

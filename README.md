@@ -21,6 +21,7 @@ expresión oral en español e inglés"*. Metodología Scrum.
 | Cuenta de Google y nube | Inicio de sesión con Google y guardado automático en Firebase (plan Spark gratuito: sin tarjeta, no cobra; si se rebasa el límite diario, el guardado se detiene hasta el día siguiente). Se guardan el texto, los resultados, las notas, las decisiones, los grupos, el perfil y la configuración de cada profesor; los archivos originales no se suben. Sin Firebase configurado, la app funciona como antes (sin cuenta). |
 | Subir desde Google Drive | Tarjeta "Google Drive" en Upload (cada archivo aparece como fila con su descarga): abre el selector oficial de Google (Google Picker, en vista de lista y con el marco de la app), permite elegir varios archivos y convierte los Google Docs a Word. Usa el permiso `drive.file`: la app solo puede abrir los archivos que el profesor elige. |
 | Inglés y español | Se elige el idioma en la bienvenida (y después en Configuración); toda la interfaz, los mensajes de análisis, los términos y el reporte PDF se traducen. El nombre ASSISTANT HELPER nunca se traduce. El texto de bienvenida alterna solo entre español e inglés con una transición suave (se puede pausar). |
+| Celular y tableta | En pantallas de menos de 1024 px la app cambia a un diseño móvil: encabezado rojo, barra de pestañas abajo, menú deslizable desde el avatar y tablas como tarjetas. |
 | Términos y privacidad | Casilla obligatoria en la bienvenida con los Términos de uso y el Aviso de privacidad (`/terms.html`): qué datos de Google se usan, acceso limitado de Drive (`drive.file`), qué se guarda y cómo borrarlo. En Settings: leer los términos, administrar el acceso de Google y borrar todos los datos guardados. |
 | Grupos y búsqueda | Grupo por archivo (con "Apply to all"), pestañas y secciones por grupo en Submissions, búsqueda sin acentos con atajo "/", y orden por alumno, similitud, IA o pendientes. |
 | Carga de documentos | Arrastrar y soltar, pegar con Ctrl+V o seleccionar archivos `.docx`, `.pdf`, `.txt` e imágenes (`.png`, `.jpg`, `.webp`), con barra de progreso (máximo 3 archivos a la vez), límite de 30 MB y aviso de archivos repetidos. Nombre del alumno, título de la tarea y opción de marcar archivos de referencia. |
@@ -49,8 +50,7 @@ Si el umbral es 30 %, no existe el rango *Review*: solo hay **Clear** (menos de 
 ## Requisitos
 
 - [Node.js](https://nodejs.org/) 20 o superior (incluye `npm`)
-- Un navegador de escritorio actualizado (Chrome, Edge o Firefox). En pantallas de menos de
-  1024 px la app muestra un aviso de que solo está disponible en computadora.
+- Un navegador actualizado (Chrome, Edge, Firefox o Safari), en computadora, tableta o celular.
 
 ## Correr el proyecto localmente
 

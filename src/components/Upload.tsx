@@ -321,6 +321,8 @@ export function Upload() {
   };
 
   const openPicker = () => inputRef.current?.click();
+  // Celular o tableta: no se puede arrastrar ni pegar con Ctrl+V, se toca para elegir
+  const touch = useMemo(() => typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches, []);
 
   return (
     <div className="page upload-page">
@@ -370,8 +372,10 @@ export function Upload() {
             <span className="dropzone-icon">
               <Icon name="upload" size={30} />
             </span>
-            <p className="dropzone-title">{dragging ? t('Drop the files to add them') : t('Drag and drop files here')}</p>
-            <p className="muted-text small">
+            <p className="dropzone-title">
+              {touch ? t('Tap to choose files') : dragging ? t('Drop the files to add them') : t('Drag and drop files here')}
+            </p>
+            <p className="muted-text small" hidden={touch}>
               {tRich('or {browse} · {keys} to paste', {
                 browse: <span className="link-like">{t('click to browse')}</span>,
                 keys: (
@@ -406,8 +410,8 @@ export function Upload() {
           <div className="source-list">
             <SourceCard
               icon={<Icon name="upload" size={22} />}
-              title={t('This computer')}
-              text={t('Word, PDF, text or image files saved on this computer.')}
+              title={touch ? t('This device') : t('This computer')}
+              text={touch ? t('Word, PDF, text or image files saved on this device.') : t('Word, PDF, text or image files saved on this computer.')}
               action={
                 <button type="button" className="button button-primary" onClick={openPicker}>
                   {t('Choose files')}

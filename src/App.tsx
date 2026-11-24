@@ -8,12 +8,14 @@ import { Sidebar } from './components/Sidebar';
 import { Toast } from './components/Toast';
 import { Topbar } from './components/Topbar';
 import { Upload } from './components/Upload';
+import { MobileNav } from './components/MobileNav';
 import { TermsGate } from './components/Terms';
 import { Welcome } from './components/Welcome';
 import { CloudSync } from './cloud/CloudSync';
 import { StoreProvider, useStore } from './state/store';
 import { TERMS_VERSION } from './terms';
-import { APP_NAME, t } from './i18n';
+import { useEffect, useState } from 'react';
+import { t } from './i18n';
 
 function CurrentView() {
   const { state } = useStore();
@@ -35,6 +37,15 @@ function CurrentView() {
 
 function Shell() {
   const { state, go } = useStore();
+  // Celular: la barra lateral se abre como panel desde el avatar del encabezado
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => setMenuOpen(false), [state.view]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenuOpen(false);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
   if (state.auth === 'checking' || state.cloud.state === 'loading') {
     return (
       <div className="app app-welcome">
@@ -61,10 +72,10 @@ function Shell() {
     );
   }
   return (
-    <div className="app">
-      <Sidebar />
+    <div className={`app${menuOpen ? ' menu-open' : ''}`}>
+      <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} />
       <div className="main">
-        <Topbar />
+        <Topbar onMenu={() => setMenuOpen(true)} />
         <main className="content" id="main-content">
           {/* La key reinicia la transición suave al cambiar de pantalla */}
           <div className="view-transition" key={state.view}>
@@ -74,27 +85,15 @@ function Shell() {
           </div>
         </main>
       </div>
+      <MobileNav />
       <Toast />
     </div>
   );
 }
 
-/** El aviso de solo computadora en el idioma elegido (necesita el estado para volver a dibujarse). */
-function DesktopOnlyText() {
-  useStore();
-  return <p>{t('{app} is available on desktop computers only.', { app: APP_NAME })}</p>;
-}
-
 export default function App() {
   return (
     <StoreProvider>
-      <div className="desktop-only" role="alert">
-        <div>
-          <img className="desktop-only-logo" src="/logo-mark.svg" alt="" width="96" height="96" />
-          <p className="desktop-only-brand">{APP_NAME}</p>
-          <DesktopOnlyText />
-        </div>
-      </div>
       <CloudSync />
       <Shell />
     </StoreProvider>

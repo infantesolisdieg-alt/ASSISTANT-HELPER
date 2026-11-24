@@ -97,7 +97,7 @@ export function Dashboard() {
   const threshold = state.settings.similarityThreshold;
 
   return (
-    <div className="page">
+    <div className="page dashboard-page">
       <section className="page-intro">
         <div>
           <h2 className="greeting">
