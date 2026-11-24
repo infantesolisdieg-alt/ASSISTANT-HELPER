@@ -3587,7 +3587,7 @@ mark.search-hit {
 .sidebar-backdrop {
   display: none;
 }
-@media (max-width: 1023.98px) {
+@media (max-width: 1023.98px), (pointer: coarse) and (max-device-width: 1023.98px) {
   .app {
     grid-template-columns: 1fr;
   }
@@ -3991,7 +3991,7 @@ mark.search-hit {
     align-items: flex-start;
   }
 }
-@media (max-width: 599.98px) {
+@media (max-width: 599.98px), (pointer: coarse) and (max-device-width: 599.98px) {
   .welcome-features li .feature-text {
     display: none;
   }
@@ -4009,7 +4009,7 @@ mark.search-hit {
 }
 
 /* ---------- v1.9.1: teléfono (menos de 768 px) ---------- */
-@media (max-width: 767.98px) {
+@media (max-width: 767.98px), (pointer: coarse) and (max-device-width: 767.98px) {
   /* Bienvenida estilo app: parte roja compacta y el formulario como hoja blanca que sube */
   .welcome {
     min-height: 100vh;
@@ -4319,7 +4319,7 @@ mark.search-hit {
 
 /* ---------- v1.9.2: teléfono, tamaños para el dedo y lectura cómoda ---------- */
 /* Se aplica en teléfonos y también en cualquier pantalla táctil angosta */
-@media (max-width: 767.98px), (pointer: coarse) and (max-width: 1023.98px) {
+@media (max-width: 767.98px), (pointer: coarse) and (max-width: 1023.98px), (pointer: coarse) and (max-device-width: 767.98px) {
   .content {
     font-size: 17px;
   }
@@ -4610,7 +4610,7 @@ mark.search-hit {
 }
 
 /* ---------- v1.9.3: menú de opciones (panel lateral) y barra de abajo, grandes en teléfono ---------- */
-@media (max-width: 767.98px), (pointer: coarse) and (max-width: 1023.98px) {
+@media (max-width: 767.98px), (pointer: coarse) and (max-width: 1023.98px), (pointer: coarse) and (max-device-width: 767.98px) {
   .sidebar {
     width: min(340px, 88vw);
     padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
@@ -4695,5 +4695,387 @@ mark.search-hit {
   .mobile-tab-icon svg {
     width: 28px;
     height: 28px;
+  }
+}
+
+/* Celular en modo escritorio (ver phoneFit.ts): con zoom, 100vh mediría varias pantallas */
+html.phone-fit .app,
+html.phone-fit .welcome,
+html.phone-fit .terms-gate {
+  min-height: calc(100vh / var(--fit, 1));
+}
+html.phone-fit .sidebar {
+  height: calc(100vh / var(--fit, 1));
+}
+html.phone-fit .viewer {
+  max-height: calc(72vh / var(--fit, 1));
+}
+html.phone-fit .modal {
+  max-height: calc(92vh / var(--fit, 1));
+}
+
+/* ---------- v1.9.4: bienvenida llamativa en teléfono ---------- */
+@media (max-width: 767.98px), (pointer: coarse) and (max-device-width: 767.98px) {
+  .welcome-hero {
+    min-height: calc(60vh / var(--fit, 1));
+    justify-content: center;
+    padding: 44px 24px 76px;
+    background:
+      radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.12) 0, transparent 42%),
+      linear-gradient(165deg, #7c1729 0%, var(--red-dark) 55%, #2a060c 100%);
+  }
+  .welcome-hero::before {
+    width: 340px;
+    height: 340px;
+    animation: blob-float 9s ease-in-out infinite alternate;
+  }
+  .welcome-hero::after {
+    width: 280px;
+    height: 280px;
+    animation: blob-float 12s ease-in-out infinite alternate-reverse;
+  }
+  .welcome-brand {
+    font-size: 25px;
+  }
+  .welcome-brand .brand-logo-lg {
+    width: 108px;
+    height: 108px;
+    animation: logo-glow 3.4s ease-in-out infinite;
+  }
+  .hero-layer .welcome-title {
+    font-size: 30px;
+    line-height: 1.25;
+    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.3);
+  }
+  .hero-layer .welcome-features li {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.18);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    padding: 16px 6px 14px;
+  }
+  .hero-layer .welcome-features .feature-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08));
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  }
+  .hero-layer .welcome-features strong {
+    font-size: 15px;
+  }
+  .hero-lang-pill {
+    font-size: 13px;
+    padding: 4px 12px;
+  }
+  .hero-lang-pause {
+    width: 34px;
+    height: 34px;
+  }
+  .welcome-panel {
+    margin-top: -40px;
+    padding: 34px 22px 40px;
+    border-radius: 32px 32px 0 0;
+  }
+  .welcome-form h2 {
+    font-size: 32px;
+  }
+}
+@keyframes blob-float {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(-36px, 44px) scale(1.18);
+  }
+}
+@keyframes logo-glow {
+  50% {
+    box-shadow:
+      0 0 0 12px rgba(255, 255, 255, 0.1),
+      0 0 0 26px rgba(255, 255, 255, 0.05),
+      0 16px 34px rgba(0, 0, 0, 0.4);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .welcome-hero::before,
+  .welcome-hero::after,
+  .welcome-brand .brand-logo-lg {
+    animation: none !important;
+  }
+}
+
+/* ---------- v1.9.5: tamaños de teléfono un poco más pequeños (punto medio, siguen cómodos para el dedo) ---------- */
+@media (max-width: 767.98px), (pointer: coarse) and (max-width: 1023.98px), (pointer: coarse) and (max-device-width: 767.98px) {
+  .content {
+    font-size: 16px;
+  }
+  .button {
+    min-height: 48px;
+    padding: 11px 18px;
+    font-size: 16px;
+    border-radius: 12px;
+  }
+  .button-lg {
+    min-height: 52px;
+    font-size: 17px;
+  }
+  .button-link,
+  .button-ghost {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .icon-button {
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 24px;
+  }
+  .input,
+  .select,
+  .textarea,
+  .searchbox-input {
+    min-height: 48px;
+    font-size: 16px;
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .searchbox-input {
+    padding-left: 40px;
+  }
+  .field-label {
+    font-size: 15px;
+  }
+  .checkbox,
+  .radio {
+    font-size: 16px;
+    min-height: 40px;
+    gap: 10px;
+  }
+  .checkbox input,
+  .radio input {
+    width: 22px;
+    height: 22px;
+  }
+  .segmented button {
+    min-height: 44px;
+    padding: 8px 16px;
+    font-size: 16px;
+  }
+  .group-tab {
+    min-height: 42px;
+    padding: 6px 16px;
+    font-size: 15px;
+  }
+  .small,
+  .muted-text.small,
+  .form-hint {
+    font-size: 14px;
+  }
+  .muted-text {
+    font-size: 15px;
+  }
+  .badge {
+    font-size: 14px;
+    padding: 4px 12px;
+  }
+  .card {
+    padding: 18px 16px;
+    border-radius: 18px;
+  }
+  .card h2 {
+    font-size: 22px;
+  }
+  .card h3,
+  .result-section h3 {
+    font-size: 19px;
+  }
+  .disclaimer {
+    font-size: 15px;
+  }
+  .check-name {
+    font-size: 16px;
+  }
+  .check-detail {
+    font-size: 15px;
+  }
+  .table td {
+    font-size: 16px;
+  }
+  .table td::before {
+    font-size: 13px;
+  }
+  .table td:first-child {
+    font-size: 17px;
+  }
+  .table tr {
+    padding: 16px 0;
+    gap: 8px;
+  }
+  .table td.right .button-link {
+    min-height: 46px;
+  }
+  .chart-legend li,
+  .bar-name,
+  .bar-value {
+    font-size: 14px;
+  }
+  .bar-row {
+    min-height: 44px;
+  }
+  .insight-text {
+    font-size: 16px;
+  }
+  .sheet {
+    font-size: 16px;
+  }
+  .toast {
+    font-size: 15px;
+  }
+  /* Encabezado, pestañas y menú */
+  .topbar {
+    padding: 12px 16px;
+  }
+  .topbar-logo {
+    width: 36px;
+    height: 36px;
+  }
+  .topbar-title {
+    font-size: 20px;
+  }
+  .topbar-menu .avatar {
+    width: 42px;
+    height: 42px;
+    font-size: 15px;
+  }
+  .mobile-tab {
+    font-size: 13px;
+    min-height: 58px;
+    gap: 3px;
+  }
+  .mobile-tab-icon {
+    width: 56px;
+    height: 34px;
+  }
+  .mobile-tab-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+  .mobile-tab-badge {
+    font-size: 12px;
+    min-width: 20px;
+    height: 20px;
+    line-height: 20px;
+  }
+  .content {
+    padding-bottom: calc(108px + env(safe-area-inset-bottom));
+  }
+  .analyze-bar {
+    bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+  .toast-region {
+    bottom: calc(92px + env(safe-area-inset-bottom));
+  }
+  .sidebar {
+    width: min(320px, 86vw);
+  }
+  .nav-item {
+    min-height: 52px;
+    font-size: 17px;
+    padding: 10px 14px;
+  }
+  .nav-item svg {
+    width: 24px;
+    height: 24px;
+  }
+  .nav-count {
+    font-size: 14px;
+  }
+  .session-title {
+    font-size: 16px;
+  }
+  .session-text,
+  .cloud-status {
+    font-size: 15px;
+  }
+  .profile .avatar {
+    width: 46px;
+    height: 46px;
+    font-size: 16px;
+  }
+  .profile-name {
+    font-size: 17px;
+  }
+  .profile-role {
+    font-size: 14px;
+  }
+  .profile-switch {
+    min-width: 46px;
+    min-height: 46px;
+  }
+  .sidebar-close {
+    width: 44px;
+    height: 44px;
+    font-size: 28px;
+  }
+  /* Panel */
+  .dashboard-page .page-intro {
+    padding: 8px 16px 68px;
+  }
+  .dashboard-page .page-intro .greeting {
+    font-size: 28px;
+  }
+  .dashboard-page .page-intro .muted-text {
+    font-size: 16px;
+  }
+  .dashboard-page .page-intro .button-primary {
+    min-height: 54px;
+    font-size: 17px;
+  }
+  .dashboard-page .stats {
+    margin-top: -54px;
+  }
+  .dashboard-page .stat-value {
+    font-size: 36px;
+  }
+  .dashboard-page .stat-label {
+    font-size: 15px;
+  }
+  .dashboard-page .stat-icon {
+    width: 42px;
+    height: 42px;
+  }
+  /* Bienvenida */
+  .welcome-form .button {
+    min-height: 54px;
+    font-size: 17px;
+    border-radius: 14px;
+  }
+  .welcome-form .input {
+    min-height: 50px;
+  }
+  .welcome-form .muted-text,
+  .terms-agree .checkbox {
+    font-size: 16px;
+  }
+}
+@media (max-width: 767.98px), (pointer: coarse) and (max-device-width: 767.98px) {
+  .welcome-brand {
+    font-size: 23px;
+  }
+  .welcome-brand .brand-logo-lg {
+    width: 96px;
+    height: 96px;
+  }
+  .hero-layer .welcome-title {
+    font-size: 27px;
+  }
+  .hero-layer .welcome-features strong {
+    font-size: 14px;
+  }
+  .hero-layer .welcome-features .feature-icon {
+    width: 46px;
+    height: 46px;
+  }
+  .welcome-form h2 {
+    font-size: 30px;
   }
 }
